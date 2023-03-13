@@ -34,13 +34,10 @@ class AudioSampler:
         }
 
     @staticmethod
-    def pydub_data(audio:AudioSegment, convert_to_mono:bool) -> Dict[str, Union[np.ndarray, int]]:
+    def pydub_data(audio:AudioSegment) -> Dict[str, Union[np.ndarray, int]]:
         '''
         Converts pydub audio data to numpy array and frame rate.
         '''
-        if convert_to_mono:
-            audio = audio.set_channels(1)
-
         return {
             'arr': np.array(audio.get_array_of_samples()),
             'fr': audio.frame_rate
@@ -61,7 +58,7 @@ class AudioSampler:
         
         return fig
     
-    def sample_generator(self, n:int) -> Dict[str, Union[AudioSegment, int, np.ndarray, dict]]:
+    def sample_generator(self, n:int, convert_to_mono:bool) -> Dict[str, Union[AudioSegment, int, np.ndarray, dict]]:
         '''
         Generator function for randomizing a set of audio samples.
         Returns metadata and spectrogram and numpy array of each sample in addition to the pydub audio object.
@@ -70,12 +67,15 @@ class AudioSampler:
         while value < n:
             audio = AudioSampler.random_overlay(self.environment_path, self.overlay_path)
             
+            if convert_to_mono:
+                audio['audio'] = audio['audio'].set_channels(1)
+            
             meta = {
                 'position_ms': audio['pos'],
                 'volume_db': audio['volume']
             }
             
-            two_channel = AudioSampler.pydub_data(audio['audio'], False)
+            two_channel = AudioSampler.pydub_data(audio['audio'])
             two_channel['sound'] = audio['audio']
             two_channel['meta'] = meta
             
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     
     audio = AudioSampler(environment_path, overlay_path)
     
-    for i, x in enumerate(audio.sample_generator(5)):
+    for i, x in enumerate(audio.sample_generator(5, True)):
         
         AudioSampler.spectrogram(x['arr'], x['fr'])
         plt.savefig(f'{out_dir}/random_overlay_{i}.png')
