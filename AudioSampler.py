@@ -8,6 +8,7 @@ import audiosegment
 import pydub
 import numpy as np
 import scipy
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 
@@ -20,18 +21,25 @@ class AudioSampler:
         
     @staticmethod
     def random_overlay(environment_path:str, overlay_path:str) -> Dict[str, Union[AudioSegment, int]]:
+        '''
+        Overlays an audio file on top of another (environmental) audio file.
+        Randomizes the position and volume of the overlay.
+        '''
         environment = AudioSegment.from_wav(environment_path)
         overlay = AudioSegment.from_wav(overlay_path)
         rand_pos = random.randint(0, len(environment) - len(overlay)) # ms
         rand_volume = random.randint(-10, 10) # dB
         return {
-            'audio': environment.overlay(overlay + rand_volume, position=rand_pos),
+            'audio': environment.overlay(overlay + rand_volume, positionaudio=rand_pos),
             'pos': rand_pos,
             'volume': rand_volume
         }
 
     @staticmethod
     def pydub_data(audio:AudioSegment, convert_to_mono:bool) -> Dict[str, Union[np.ndarray, int]]:
+        '''
+        Converts pydub audio data to numpy array and frame rate.
+        '''
         if convert_to_mono:
             audio = audio.set_channels(1)
 
@@ -39,8 +47,27 @@ class AudioSampler:
             'arr': np.array(audio.get_array_of_samples()),
             'fr': audio.frame_rate
         }
+        
+    @staticmethod
+    def spectrogram(arr:np.ndarray, frame_rate:int) -> Figure:
+        '''
+        Plots a spectrogram of numpy array audio data using matplotlib.
+        '''
+        f, t, Sxx = scipy.signal.spectrogram(arr, fs=frame_rate)
+        Sxx = 10 * np.log10(Sxx + 1e-9)
+        
+        fig = plt.figure()
+        plt.pcolormesh(t, f, Sxx)
+        plt.ylabel('Frequency [Hz]')
+        plt.xlabel('Time [sec]')
+        
+        return fig
     
     def sample_generator(self, n):
+        '''
+        Generator function for randomizing a set of audio samples.
+        Returns metadata and spectrogram and numpy array of each sample in addition to the pydub audio object.
+        '''
         value = 0
         while value < n:
             audio = AudioSampler.random_overlay(self.environment_path, self.overlay_path)
@@ -71,12 +98,8 @@ if __name__ == '__main__':
     
     for i, x in enumerate(audio.sample_generator(5)):
         
-        f, t, Sxx = scipy.signal.spectrogram(x['arr'], fs=x['fr'])
-        Sxx = 10 * np.log10(Sxx + 1e-9)
-        plt.pcolormesh(t, f, Sxx)
-        plt.ylabel('Frequency [Hz]')
-        plt.xlabel('Time [sec]')
-        plt.show()
+        AudioSampler.spectrogram(x['arr'], x['fr'])
+        plt.savefig(f'{out_dir}/random_overlay_{i}.png')
         
         out_path = f'{out_dir}/random_overlay_{i}.wav'
         x['sound'].export(out_path, format='wav')
