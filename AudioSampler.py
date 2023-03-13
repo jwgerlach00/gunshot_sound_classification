@@ -61,7 +61,7 @@ class AudioSampler:
         
         return fig
     
-    def sample_generator(self, n):
+    def sample_generator(self, n:int) -> Dict[str, Union[AudioSegment, int, np.ndarray, dict]]:
         '''
         Generator function for randomizing a set of audio samples.
         Returns metadata and spectrogram and numpy array of each sample in addition to the pydub audio object.
