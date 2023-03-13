@@ -1,0 +1,15 @@
+overlay_tests/random_overlay_0:
+  position_ms: 707
+  volume_db: 3
+overlay_tests/random_overlay_1:
+  position_ms: 801
+  volume_db: 4
+overlay_tests/random_overlay_2:
+  position_ms: 2300
+  volume_db: -9
+overlay_tests/random_overlay_3:
+  position_ms: 15
+  volume_db: -8
+overlay_tests/random_overlay_4:
+  position_ms: 1560
+  volume_db: -2
