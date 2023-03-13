@@ -1,11 +1,9 @@
 from pydub import AudioSegment
 # from pydub.playback import play
 import random
-from typing import Tuple, Dict, Union
+from typing import Dict, Union
 import os
 import yaml
-import audiosegment
-import pydub
 import numpy as np
 import scipy
 from matplotlib.figure import Figure
