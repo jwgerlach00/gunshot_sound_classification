@@ -30,7 +30,7 @@ class AudioSampler:
         rand_pos = random.randint(0, len(environment) - len(overlay)) # ms
         rand_volume = random.randint(-10, 10) # dB
         return {
-            'audio': environment.overlay(overlay + rand_volume, positionaudio=rand_pos),
+            'audio': environment.overlay(overlay + rand_volume, position=rand_pos),
             'pos': rand_pos,
             'volume': rand_volume
         }
