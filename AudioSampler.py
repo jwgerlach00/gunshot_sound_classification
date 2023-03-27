@@ -31,10 +31,20 @@ class AudioSampler:
         overlay = AudioSegment.from_wav(overlay_path)
         rand_pos = random.randint(0, ENV_LENGTH - len(overlay)) # ms
         rand_volume = random.randint(-10, 10) # dB
+        
+        y = []
+        for x in range(ENV_LENGTH):
+            if x < rand_pos or x > rand_pos+len(overlay):
+                y.append(0)
+            else:
+                y.append(1)
+
         return {
             'audio': env_clip.overlay(overlay + rand_volume, position=rand_pos),
             'pos': rand_pos,
-            'volume': rand_volume
+            'volume': rand_volume,
+            'y' :  y
+            
         }
 
     @staticmethod
