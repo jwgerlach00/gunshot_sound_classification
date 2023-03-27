@@ -84,10 +84,12 @@ def get_imu_data():
     imu = data_dict['imu'].to_numpy()
     ann = data_dict['ann'].to_numpy().flatten()
     del data_dict # Remove to free memory
-    
+    return imu,ann
+
+def get_model_params():
     with open('MLP/mlp_hyperparams.yaml', 'r') as f:
         hyperparams = yaml.safe_load(f)
-    return hyperparams, imu, ann
+    return hyperparams
     
 def get_distribution(all_y:List[float], num_classes:int=4) -> Dict[str, List[float]]:
     return {
