@@ -31,32 +31,27 @@ class TrainingLoop:
         self.train_acc = None
     
     @staticmethod
-    def dataloader(Dataset:torch.utils.data.Dataset, X:np.ndarray, y:np.ndarray, hyperparams:dict) -> DataLoader:
-        return DataLoader(Dataset(X, y, hyperparams), batch_size=hyperparams['batch_size'])
+    def dataloader(Dataset:torch.utils.data.Dataset, hyperparams:dict) -> DataLoader:
+        return DataLoader(Dataset(hyperparams), batch_size=hyperparams['batch_size'])
 
     def training_loop(self, imu, ann):
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
-            
-            # Split into train and validation sets
-            X_train, X_val, y_train, y_val = train_test_split(imu, ann, test_size=self.hyperparams['val_size'],
-                                                              shuffle=self.hyperparams['shuffle_split'],
-                                                              random_state=42)
             
             # Loss (optionally weighted)
             weight = cross_entropy_weights(get_distribution(ann.tolist())['fracs']).to(TrainingLoop.device) if \
                 self.hyperparams['weighted_loss'] else None
             self.criterion = torch.nn.BCEWithLogitsLoss(weight=weight)
             
-            # Normalization (optionally)
-            if self.hyperparams['normalize']['run']:
-                X_train, scaler = normalize_data(X_train, method=self.hyperparams['normalize']['method'])
-                if scaler: # None if method is 'mean'
-                    X_val = scaler.transform(X_val)
+            # # Normalization (optionally)
+            # if self.hyperparams['normalize']['run']:
+            #     X_train, scaler = normalize_data(X_train, method=self.hyperparams['normalize']['method'])
+            #     if scaler: # None if method is 'mean'
+            #         X_val = scaler.transform(X_val)
             
             # Dataloaders
-            train_generator = TrainingLoop.dataloader(self.Dataset, X_train, y_train, self.hyperparams)
-            val_generator = TrainingLoop.dataloader(self.Dataset, X_val, y_val, self.hyperparams)
+            train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
+            val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
             
             # Batch train
             batch_train_loss_history = []
