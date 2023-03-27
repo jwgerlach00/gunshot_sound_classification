@@ -46,7 +46,7 @@ class TrainingLoop:
             # Loss (optionally weighted)
             weight = cross_entropy_weights(get_distribution(ann.tolist())['fracs']).to(TrainingLoop.device) if \
                 self.hyperparams['weighted_loss'] else None
-            self.criterion = torch.nn.CrossEntropyLoss(weight=weight) # one-hot encoding taken care of by pytorch
+            self.criterion = torch.nn.BCEWithLogitsLoss(weight=weight)
             
             # Normalization (optionally)
             if self.hyperparams['normalize']['run']:
