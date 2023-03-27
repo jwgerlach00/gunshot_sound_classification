@@ -10,7 +10,7 @@ if __name__ == '__main__':
     train = True #set to train and save, or load and eval
     if train == True:
         training_loop = TrainingLoop(MLPModel, MLPDataset, hyperparams)
-        training_loop.training_loop(imu, ann)
+        training_loop.training_loop()
         joblib.dump(training_loop, 'mlp.joblib') #save model
     else:
         training_loop = joblib.load('mlp.joblib') 

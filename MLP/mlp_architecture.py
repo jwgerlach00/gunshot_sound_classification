@@ -1,5 +1,6 @@
 from torch import nn
 import torch
+from AudioSampler import AudioSampler
 
 class MLPModel(nn.Module):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -33,13 +34,16 @@ class MLPModel(nn.Module):
 
 class MLPDataset(torch.utils.data.Dataset):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    def __init__(self, X, y, *args, **kwargs):
-        self.X = torch.tensor(X, device=MLPDataset.device).float()
-        self.y = torch.tensor(y, device=MLPDataset.device)
+    data = AudioSampler()
+    def __init__(self, *args, **kwargs):
+        self.X = None
+        self.y = None
     
     def __len__(self):
         return len(self.X)
     
-    def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+    def __getitem__(self):
+        X,y = MLPDataset.data.sample_generator(1, convert_to_mono=True)
+        self.X = torch.tensor(X, device=MLPDataset.device).float()
+        self.y = torch.tensor(y, device=MLPDataset.device)
+        return self.X, self.y

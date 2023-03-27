@@ -89,11 +89,11 @@ class AudioSampler:
                 'volume_db': audio['volume']
             }
             
-            two_channel = AudioSampler.pydub_data(audio['audio'])
-            two_channel['sound'] = audio['audio']
-            two_channel['meta'] = meta
+            sample = AudioSampler.pydub_data(audio['audio'])
+            sample['sound'] = audio['audio']
+            sample['meta'] = meta
             
-            yield two_channel
+            yield sample,audio['y']
             value += 1
 
 
