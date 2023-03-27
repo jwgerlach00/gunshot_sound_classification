@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import torch
-
+import yaml
 
 def expand_ann(imu_t:List[float], ann:List[int], ann_t:List[float]) -> Dict[str, List[Union[int, float]]]:
     class MemIter():
@@ -78,6 +78,16 @@ def read_all_data(dir_path:str='processed_training_data') -> Dict[str, pd.DataFr
         'ann': ann.reset_index(drop=True),
         'ann_t': ann_t.reset_index(drop=True)
     }
+
+def get_imu_data():
+    data_dict = read_all_data()
+    imu = data_dict['imu'].to_numpy()
+    ann = data_dict['ann'].to_numpy().flatten()
+    del data_dict # Remove to free memory
+    
+    with open('MLP/mlp_hyperparams.yaml', 'r') as f:
+        hyperparams = yaml.safe_load(f)
+    return hyperparams, imu, ann
     
 def get_distribution(all_y:List[float], num_classes:int=4) -> Dict[str, List[float]]:
     return {

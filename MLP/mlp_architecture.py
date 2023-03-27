@@ -9,7 +9,7 @@ class MLPModel(nn.Module):
         hidden_layer_sizes = hyperparams['mlp']['hidden_layers']
         
         self.relu = nn.ReLU() # Activation function
-        self.input = nn.Linear(6, hidden_layer_sizes[0])
+        self.input = nn.Linear(hyperparams['mlp']['input_size'], hidden_layer_sizes[0])
 
         self.hidden_layers = []
         for i in range(len(hidden_layer_sizes)):
@@ -19,26 +19,10 @@ class MLPModel(nn.Module):
             else:
                 self.hidden_layers.append(nn.Linear(hidden_layer_sizes[i], hyperparams['num_classes'])\
                     .to(device=MLPModel.device))
-        # self.hidden_layer1 = nn.Linear(hidden_layer_sizes[0], hidden_layer_sizes[1])
-        # self.hidden_layer2 = nn.Linear(hidden_layer_sizes[1], hidden_layer_sizes[2])
-        # self.hidden_layer3 = nn.Linear(hidden_layer_sizes[2], hyperparams['num_classes'])
-        
-        # self.hidden_layers = []
-        # self.hidden_layers.append(self.hidden_layer1)
-        # self.hidden_layers.append(self.hidden_layer2)
-        # self.hidden_layers.append(self.hidden_layer3)
-        
         self.output = nn.Softmax(dim=1)
         
     def forward(self, x):
         x = self.input(x)
-        # x = self.relu(x)
-        # x = self.hidden_layer1(x)
-        # x = self.relu(x)
-        # x = self.hidden_layer2(x)
-        # x = self.relu(x)
-        # x = self.hidden_layer3(x)
-        # print(self.hidden_layer3)
         
         for hidden_layer in self.hidden_layers:
             x = self.relu(x)
