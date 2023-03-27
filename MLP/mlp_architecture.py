@@ -1,7 +1,6 @@
 from torch import nn
 import torch
 
-
 class MLPModel(nn.Module):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
