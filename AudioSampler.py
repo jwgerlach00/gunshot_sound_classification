@@ -109,3 +109,4 @@ if __name__ == '__main__':
         
         with open(f'{out_dir}/metadata.yaml', 'a') as f:
             yaml.dump(meta, f)
+
