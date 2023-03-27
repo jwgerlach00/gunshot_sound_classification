@@ -23,12 +23,16 @@ class AudioSampler:
         Overlays an audio file on top of another (environmental) audio file.
         Randomizes the position and volume of the overlay.
         '''
+        ENV_LENGTH = 5 *1000 # 5 seconds
         environment = AudioSegment.from_wav(environment_path)
+        env_clip_start = random.randint(0, len(environment) - ENV_LENGTH)
+        env_clip = environment[env_clip_start:env_clip_start+ENV_LENGTH]
+
         overlay = AudioSegment.from_wav(overlay_path)
-        rand_pos = random.randint(0, len(environment) - len(overlay)) # ms
+        rand_pos = random.randint(0, ENV_LENGTH - len(overlay)) # ms
         rand_volume = random.randint(-10, 10) # dB
         return {
-            'audio': environment.overlay(overlay + rand_volume, position=rand_pos),
+            'audio': env_clip.overlay(overlay + rand_volume, position=rand_pos),
             'pos': rand_pos,
             'volume': rand_volume
         }
@@ -85,7 +89,7 @@ class AudioSampler:
 
 if __name__ == '__main__':
     path_stem = 'kaggle_sounds'
-    environment_path = f'example_from_rainforest_model.wav'
+    environment_path = f'city.wav'
     overlay_path = f'{path_stem}/Zastava M92/9 (1).wav'
     
     out_dir = 'overlay_tests'
