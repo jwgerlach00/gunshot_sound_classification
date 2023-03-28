@@ -1,11 +1,10 @@
-from helpers.preprocessing import get_imu_data,get_model_params
+from helpers.preprocessing import get_model_params
 from mlp_architecture import MLPModel, MLPDataset
 from helpers import TrainingLoop
 import joblib
 
 if __name__ == '__main__':
     hyperparams = get_model_params()
-    imu, ann = get_imu_data() #gets data
 
     train = True #set to train and save, or load and eval
     if train == True:

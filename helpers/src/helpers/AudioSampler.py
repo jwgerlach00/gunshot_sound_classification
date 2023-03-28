@@ -93,7 +93,7 @@ class AudioSampler:
             sample['sound'] = audio['audio']
             sample['meta'] = meta
             
-            yield sample,audio['y']
+            yield sample, audio['y']
             value += 1
 
 

@@ -34,14 +34,11 @@ class TrainingLoop:
     def dataloader(Dataset:torch.utils.data.Dataset, hyperparams:dict) -> DataLoader:
         return DataLoader(Dataset(hyperparams), batch_size=hyperparams['batch_size'])
 
-    def training_loop(self, imu, ann):
+    def training_loop(self,):
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             
-            # Loss (optionally weighted)
-            weight = cross_entropy_weights(get_distribution(ann.tolist())['fracs']).to(TrainingLoop.device) if \
-                self.hyperparams['weighted_loss'] else None
-            self.criterion = torch.nn.BCEWithLogitsLoss(weight=weight)
+            self.criterion = torch.nn.BCEWithLogitsLoss()
             
             # # Normalization (optionally)
             # if self.hyperparams['normalize']['run']:
