@@ -10,7 +10,7 @@ class MLPModel(nn.Module):
         hidden_layer_sizes = hyperparams['mlp']['hidden_layers']
         
         self.relu = nn.ReLU() # Activation function
-        self.input = nn.Linear(hyperparams['mlp']['input_size'], hidden_layer_sizes[0])
+        self.input = nn.Linear(hyperparams['window_size'], hidden_layer_sizes[0])
 
         self.hidden_layers = []
         for i in range(len(hidden_layer_sizes)):
@@ -40,7 +40,7 @@ class MLPDataset(torch.utils.data.Dataset):
 
     def __init__(self,hyperparams,size):
         self.window_size = hyperparams['window_size']
-        self.X,self.y = MLPDataset.data.sample_array(size, convert_to_mono=True)
+        self.X,self.y = MLPDataset.data.sample_array(size,self.window_size, convert_to_mono=True)
         self.X = torch.tensor(self.X).float()
         self.y = torch.tensor(self.y)
     

@@ -12,4 +12,3 @@ normalize:
 
 mlp:
   hidden_layers: [20]
-  input_size: 100
