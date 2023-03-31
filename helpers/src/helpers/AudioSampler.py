@@ -94,7 +94,7 @@ class AudioSampler:
             yield AudioSampler.pydub_data(audio['audio'])['arr'], audio['y']
             value += 1
             
-    def sample_array(self, n:int, convert_to_mono:bool) -> Dict[str, Union[np.ndarray, int, dict]]:
+    def sample_array(self, n:int, window_size:int, convert_to_mono:bool) -> Dict[str, Union[np.ndarray, int, dict]]:
         '''
         Returns a numpy array of audio samples.
         '''
@@ -137,9 +137,15 @@ class AudioSampler:
                 'volume_db': audio['volume']
             }
             
-            #TODO: X needs to be ()
-            X.append(AudioSampler.pydub_data(audio['audio'])['arr'])
-            y.append(audio['y'])
+            clip = AudioSampler.pydub_data(audio['audio'])['arr']
+            labels = audio['y']
+
+            for i in range(len(clip)):
+                try:
+                    X.append(clip[i:i+window_size])
+                    y.append(labels[i:i+window_size][-1])
+                except:
+                    pass
             
         return np.array(X), np.array(y)
 
