@@ -38,7 +38,7 @@ class TrainingLoop:
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             
-            self.criterion = torch.nn.BCEWithLogitsLoss()
+            self.criterion = torch.nn.BCELoss()
             
             # # Normalization (optionally)
             # if self.hyperparams['normalize']['run']:
@@ -57,7 +57,8 @@ class TrainingLoop:
                 self.model.train()
                 
                 y_p = self.model(X)
-                loss = self.criterion(y_p, y)
+                y_target = torch.tensor([y[i][-1] for i in range(len(y))])
+                loss = self.criterion(y_p, y_target.view(y_p.shape[0],1))
 
                 loss.backward()
                 self.optimizer.step()
@@ -70,7 +71,8 @@ class TrainingLoop:
                 with torch.no_grad():
                     y_p = self.model(X)
                 
-                loss = self.criterion(y_p, y)
+                y_target = torch.tensor([y[i][-1] for i in range(len(y))])
+                loss = self.criterion(y_p, y_target.view(y_p.shape[0],1))
                 batch_val_loss_history.append(loss.item())
             
             # Batch average loss
@@ -121,6 +123,7 @@ class TrainingLoop:
             model.eval()
             with torch.no_grad():
                 y_p = TrainingLoop.model_output_to_classes(model(X))
-                sum += torch.sum(y == y_p).item()
+                y_target = torch.tensor([y[i][-1] for i in range(len(y))])
+                sum += torch.sum(y_target.view(y_p.shape[0],1) == y_p).item()
                 length += len(y_p)
         return sum/length
