@@ -33,7 +33,7 @@ class MLPModel(nn.Module):
 
 
 class MLPDataset(torch.utils.data.Dataset):
-    data = AudioSampler('city.wav','kaggle_sounds/Zastava M92/9 (1).wav')
+    data = AudioSampler()
 
     def __init__(self,hyperparams,size):
         self.window_size = hyperparams['window_size']

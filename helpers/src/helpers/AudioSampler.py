@@ -13,9 +13,8 @@ from tqdm import tqdm
 class AudioSampler:
     random.seed(42)
     
-    def __init__(self, environment_path:str, overlay_path:int):
-        self.environment_path = environment_path
-        self.overlay_path = overlay_path
+    def __init__(self):
+        pass
         
     @staticmethod
     def random_overlay(environment_path:str, overlay_path:str) -> Dict[str, Union[AudioSegment, int]]:
