@@ -29,7 +29,7 @@ class MLPModel(nn.Module):
             x = self.relu(x)
             x = hidden_layer(x) # No relu at end because output is softmax
 
-        return self.output(x)
+        return self.output(x).view(-1)
 
 
 class MLPDataset(torch.utils.data.Dataset):
