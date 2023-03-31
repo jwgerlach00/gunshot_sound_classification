@@ -56,7 +56,7 @@ class TrainingLoop:
                 self.model.train()
                 
                 y_p = self.model(X)
-                loss = self.criterion(y_p.view(-1),y)
+                loss = self.criterion(y_p,y)
 
                 loss.backward()
                 self.optimizer.step()
@@ -82,8 +82,8 @@ class TrainingLoop:
             self.val_loss_history.append(epoch_val_loss)
         
         # Calculate accuracy
-        self.train_acc = TrainingLoop.eval_acc(self.model, train_generator)
-        self.val_acc = TrainingLoop.eval_acc(self.model, val_generator)
+        #self.train_acc = TrainingLoop.accuracy(self.model, train_generator)
+        #self.val_acc = TrainingLoop.accuracy(self.model, val_generator)
   
         return self.model
 
@@ -110,16 +110,18 @@ class TrainingLoop:
     
     @staticmethod
     def model_output_to_classes(model_output:torch.Tensor) -> torch.Tensor:
-        return torch.max(model_output, 1)[1] # Indices of max values
+        '''not working with current dimensions...'''
+        return torch.max(model_output)
 
     @staticmethod
-    def eval_acc(model:torch.nn.Module, dataloader:torch.utils.data.DataLoader) -> float:
+    def accuracy(model:torch.nn.Module, dataloader:torch.utils.data.DataLoader) -> float:
         sum = 0
         length = 0
         for (X, y) in tqdm(dataloader):
             model.eval()
             with torch.no_grad():
                 y_p = TrainingLoop.model_output_to_classes(model(X))
+                print(y_p)
                 sum += torch.sum(y == y_p).item()
                 length += len(y_p)
         return sum/length
