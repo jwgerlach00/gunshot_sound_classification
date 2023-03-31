@@ -56,9 +56,7 @@ class TrainingLoop:
                 self.model.train()
                 
                 y_p = self.model(X)
-                print(y_p)
-                print(y)
-                loss = self.criterion(y_p,y)
+                loss = self.criterion(y_p.view(-1),y)
 
                 loss.backward()
                 self.optimizer.step()

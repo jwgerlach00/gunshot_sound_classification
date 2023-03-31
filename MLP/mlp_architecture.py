@@ -42,7 +42,7 @@ class MLPDataset(torch.utils.data.Dataset):
         self.y = torch.tensor(self.y)
     
     def __len__(self):
-        return len(self.X) - self.window_size
+        return len(self.X)
     
     def __getitem__(self,idx):
-        return self.X[idx:idx+self.window_size], self.y[idx:idx+self.window_size]
+        return self.X[idx], self.y[idx]
