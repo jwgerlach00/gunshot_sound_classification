@@ -57,7 +57,7 @@ class TrainingLoop:
                 self.model.train()
                 
                 y_p = self.model(X)
-                y_target = torch.tensor([y[i][-1] for i in range(len(y))])
+                y_target = torch.tensor([y[i][-1] for i in range(len(y))],dtype=torch.float32)
                 loss = self.criterion(y_p, y_target.view(y_p.shape[0],1))
 
                 loss.backward()
@@ -71,7 +71,7 @@ class TrainingLoop:
                 with torch.no_grad():
                     y_p = self.model(X)
                 
-                y_target = torch.tensor([y[i][-1] for i in range(len(y))])
+                y_target = torch.tensor([y[i][-1] for i in range(len(y))],dtype=torch.float32)
                 loss = self.criterion(y_p, y_target.view(y_p.shape[0],1))
                 batch_val_loss_history.append(loss.item())
             
@@ -123,7 +123,7 @@ class TrainingLoop:
             model.eval()
             with torch.no_grad():
                 y_p = TrainingLoop.model_output_to_classes(model(X))
-                y_target = torch.tensor([y[i][-1] for i in range(len(y))])
+                y_target = torch.tensor([y[i][-1] for i in range(len(y))],dtype=torch.float32)
                 sum += torch.sum(y_target.view(y_p.shape[0],1) == y_p).item()
                 length += len(y_p)
         return sum/length
