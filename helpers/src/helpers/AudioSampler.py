@@ -43,7 +43,6 @@ class AudioSampler:
             'pos': rand_pos,
             'volume': rand_volume,
             'y' :  y
-            
         }
 
     @staticmethod
@@ -95,14 +94,39 @@ class AudioSampler:
             yield AudioSampler.pydub_data(audio['audio'])['arr'], audio['y']
             value += 1
             
-    def sample_array(self, n:int, window_size:int, convert_to_mono:bool) -> Dict[str, Union[np.ndarray, int, dict]]:
+    def sample_array(self, n:int, convert_to_mono:bool) -> Dict[str, Union[np.ndarray, int, dict]]:
         '''
         Returns a numpy array of audio samples.
         '''
+
+        # enrionment_path
+        environment_dir = 'environment_sounds'
+        all_environment_files = []
+        for x in os.listdir(environment_dir):
+            if x.endswith(".wav"):
+                all_environment_files.append(x)
+
+        
+
+        # gunshot path
+        overlay_dir = 'kaggle_sounds'
+        all_overlay_files = []
+        for x in os.listdir(overlay_dir):
+            for y in os.listdir(f'{overlay_dir}/{x}'):
+                all_overlay_files.append(f'{x}/{y}')
+
+        
+
         X = []
         y = []
         print('Generating Dataset...')
         for _ in tqdm(range(n)):
+            random_environment_file = random.choice(all_environment_files)
+            self.environment_path = f'{environment_dir}/{random_environment_file}'
+
+            random_overlay_file = random.choice(all_overlay_files)
+            self.overlay_path = f'{overlay_dir}/{random_overlay_file}'
+
             audio = AudioSampler.random_overlay(self.environment_path, self.overlay_path)
             
             if convert_to_mono:
@@ -113,25 +137,19 @@ class AudioSampler:
                 'volume_db': audio['volume']
             }
             
-            clip = AudioSampler.pydub_data(audio['audio'])['arr']
-            labels = audio['y']
-
-            for i in range(len(clip)):
-                try:
-                    w = len(clip[i:i+window_size])
-                    if w == window_size:
-                        y.append(labels[i:i+window_size][-1])
-                        X.append(clip[i:i+window_size])
-                        
-                except:
-                    pass
-        return np.array(X,dtype=np.float32), np.array(y,dtype=np.float32)
+            #TODO: X needs to be ()
+            X.append(AudioSampler.pydub_data(audio['audio'])['arr'])
+            y.append(audio['y'])
+            
+        return np.array(X), np.array(y)
 
 
 
 if __name__ == '__main__':
-    path_stem = 'kaggle_sounds'
+    # Environment Path
     environment_path = f'city.wav'
+    
+    path_stem = 'kaggle_sounds'
     overlay_path = f'{path_stem}/Zastava M92/9 (1).wav'
     
     out_dir = 'overlay_tests'
@@ -140,6 +158,7 @@ if __name__ == '__main__':
     
     audio = AudioSampler(environment_path, overlay_path)
     
+    ''' Not needed now
     for i, x in enumerate(audio.sample_generator(5, True)):
         
         AudioSampler.spectrogram(x['arr'], x['fr'])
@@ -151,4 +170,4 @@ if __name__ == '__main__':
         
         with open(f'{out_dir}/metadata.yaml', 'a') as f:
             yaml.dump(meta, f)
-
+    '''

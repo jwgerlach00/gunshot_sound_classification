@@ -1,4 +1,5 @@
 setup.py
+src/helpers/AudioSampler.py
 src/helpers/TrainingLoop.py
 src/helpers/__init__.py
 src/helpers/eval.py
