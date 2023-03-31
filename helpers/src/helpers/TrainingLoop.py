@@ -38,8 +38,8 @@ class TrainingLoop:
         self.criterion = torch.nn.BCELoss()
 
         # Dataloaders
-        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,200)
-        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,200)
+        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,8)
+        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,2)
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             
@@ -56,6 +56,8 @@ class TrainingLoop:
                 self.model.train()
                 
                 y_p = self.model(X)
+                print(y_p)
+                print(y)
                 loss = self.criterion(y_p,y)
 
                 loss.backward()

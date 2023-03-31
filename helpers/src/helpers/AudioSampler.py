@@ -119,14 +119,14 @@ class AudioSampler:
 
             for i in range(len(clip)):
                 try:
-                    X.append(clip[i:i+window_size])
-                    y.append(labels[i+window_size])
+                    w = len(clip[i:i+window_size])
+                    if w == window_size:
+                        y.append(labels[i:i+window_size][-1])
+                        X.append(clip[i:i+window_size])
+                        
                 except:
                     pass
-
-            
-            
-        return np.array(X), np.array(y)
+        return np.array(X,dtype=np.float32), np.array(y,dtype=np.float32)
 
 
 
