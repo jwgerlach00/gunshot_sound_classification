@@ -31,15 +31,15 @@ class TrainingLoop:
         self.train_acc = None
     
     @staticmethod
-    def dataloader(Dataset:torch.utils.data.Dataset, hyperparams:dict) -> DataLoader:
-        return DataLoader(Dataset(hyperparams), batch_size=hyperparams['batch_size'])
+    def dataloader(Dataset:torch.utils.data.Dataset, hyperparams:dict,size:int) -> DataLoader:
+        return DataLoader(Dataset(hyperparams,size), batch_size=hyperparams['batch_size'])
 
     def training_loop(self,):
         self.criterion = torch.nn.BCELoss()
 
         # Dataloaders
-        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
-        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
+        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,200)
+        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,200)
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             
