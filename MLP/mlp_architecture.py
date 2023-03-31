@@ -37,14 +37,13 @@ class MLPDataset(torch.utils.data.Dataset):
     data = AudioSampler('city.wav','kaggle_sounds/Zastava M92/9 (1).wav')
     def __init__(self,hyperparams,*args, **kwargs):
         self.window_size = hyperparams['window_size']
-        self.generator = MLPDataset.data.sample_array(1000, convert_to_mono=True)
-        self.X,self.y = next(self.generator)
+        self.X,self.y = MLPDataset.data.sample_array(1000, convert_to_mono=True)
+        print(self.X.shape,self.y.shape)
     
     def __len__(self):
         return len(self.X) - self.window_size
     
     def __getitem__(self,idx):
-        self.X,self.y = next(self.generator)
         self.X = torch.tensor(self.X, device=MLPDataset.device).float()
         self.y = torch.tensor(self.y, device=MLPDataset.device)
         return self.X[idx:idx+self.window_size], self.y[idx:idx+self.window_size]

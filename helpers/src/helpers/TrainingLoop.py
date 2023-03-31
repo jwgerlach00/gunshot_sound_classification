@@ -35,6 +35,9 @@ class TrainingLoop:
         return DataLoader(Dataset(hyperparams), batch_size=hyperparams['batch_size'])
 
     def training_loop(self,):
+        # Dataloaders
+        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
+        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             
@@ -45,10 +48,6 @@ class TrainingLoop:
             #     X_train, scaler = normalize_data(X_train, method=self.hyperparams['normalize']['method'])
             #     if scaler: # None if method is 'mean'
             #         X_val = scaler.transform(X_val)
-            
-            # Dataloaders
-            train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
-            val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
             
             # Batch train
             batch_train_loss_history = []

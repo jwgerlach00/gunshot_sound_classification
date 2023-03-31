@@ -8,7 +8,7 @@ import numpy as np
 import scipy
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-
+from tqdm import tqdm
 
 class AudioSampler:
     random.seed(42)
@@ -102,7 +102,8 @@ class AudioSampler:
         '''
         X = []
         y = []
-        for _ in range(n):
+        print('Generating Dataset...')
+        for _ in tqdm(range(n)):
             audio = AudioSampler.random_overlay(self.environment_path, self.overlay_path)
             
             if convert_to_mono:
