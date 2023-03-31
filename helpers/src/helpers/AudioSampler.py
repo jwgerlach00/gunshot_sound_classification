@@ -93,8 +93,32 @@ class AudioSampler:
             # sample['sound'] = audio['audio']
             # sample['meta'] = meta
             
-            yield AudioSampler.pydub_data(audio['audio']['arr']), audio['y']
+            yield AudioSampler.pydub_data(audio['audio'])['arr'], audio['y']
             value += 1
+            
+    def sample_array(self, n:int, convert_to_mono:bool) -> Dict[str, Union[np.ndarray, int, dict]]:
+        '''
+        Returns a numpy array of audio samples.
+        '''
+        X = []
+        y = []
+        for _ in range(n):
+            audio = AudioSampler.random_overlay(self.environment_path, self.overlay_path)
+            
+            if convert_to_mono:
+                audio['audio'] = audio['audio'].set_channels(1)
+            
+            meta = {
+                'position_ms': audio['pos'],
+                'volume_db': audio['volume']
+            }
+            
+            # print(AudioSampler.pydub_data(audio['audio'])['arr'])
+            X.append(AudioSampler.pydub_data(audio['audio'])['arr'])
+            y.append(audio['y'])
+            
+        return np.array(X), np.array(y)
+
 
 
 if __name__ == '__main__':
