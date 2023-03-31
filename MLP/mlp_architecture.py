@@ -23,6 +23,8 @@ class MLPModel(nn.Module):
         self.output = nn.Softmax(dim=1)
         
     def forward(self, x):
+        #RuntimeError: mat1 and mat2 shapes cannot be multiplied (3200x220500 and 100x20)
+        #44100*5 = 220500
         x = self.input(x)
         
         for hidden_layer in self.hidden_layers:
@@ -35,16 +37,15 @@ class MLPModel(nn.Module):
 class MLPDataset(torch.utils.data.Dataset):
     #TODO: Randomize the gun sample in AudioSampler
     data = AudioSampler('city.wav','kaggle_sounds/Zastava M92/9 (1).wav')
-    
-    def __init__(self,hyperparams,*args, **kwargs):
+
+    def __init__(self,hyperparams,size):
         self.window_size = hyperparams['window_size']
-        self.X,self.y = MLPDataset.data.sample_array(1000, convert_to_mono=True)
-        print(self.X.shape,self.y.shape)
+        self.X,self.y = MLPDataset.data.sample_array(size, convert_to_mono=True)
+        self.X = torch.tensor(self.X).float()
+        self.y = torch.tensor(self.y)
     
     def __len__(self):
         return len(self.X) - self.window_size
     
     def __getitem__(self,idx):
-        self.X = torch.tensor(self.X).float()
-        self.y = torch.tensor(self.y)
         return self.X[idx:idx+self.window_size], self.y[idx:idx+self.window_size]

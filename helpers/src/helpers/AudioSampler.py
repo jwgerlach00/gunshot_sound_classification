@@ -114,7 +114,7 @@ class AudioSampler:
                 'volume_db': audio['volume']
             }
             
-            # print(AudioSampler.pydub_data(audio['audio'])['arr'])
+            #TODO: X needs to be ()
             X.append(AudioSampler.pydub_data(audio['audio'])['arr'])
             y.append(audio['y'])
             
