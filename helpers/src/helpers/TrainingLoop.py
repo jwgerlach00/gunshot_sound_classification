@@ -35,13 +35,13 @@ class TrainingLoop:
         return DataLoader(Dataset(hyperparams), batch_size=hyperparams['batch_size'])
 
     def training_loop(self,):
+        self.criterion = torch.nn.BCELoss()
+
         # Dataloaders
         train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
         val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams)
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
-            
-            self.criterion = torch.nn.BCELoss()
             
             # # Normalization (optionally)
             # if self.hyperparams['normalize']['run']:

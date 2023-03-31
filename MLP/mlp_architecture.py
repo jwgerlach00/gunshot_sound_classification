@@ -33,8 +33,9 @@ class MLPModel(nn.Module):
 
 
 class MLPDataset(torch.utils.data.Dataset):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    #TODO: Randomize the gun sample in AudioSampler
     data = AudioSampler('city.wav','kaggle_sounds/Zastava M92/9 (1).wav')
+    
     def __init__(self,hyperparams,*args, **kwargs):
         self.window_size = hyperparams['window_size']
         self.X,self.y = MLPDataset.data.sample_array(1000, convert_to_mono=True)
@@ -44,6 +45,6 @@ class MLPDataset(torch.utils.data.Dataset):
         return len(self.X) - self.window_size
     
     def __getitem__(self,idx):
-        self.X = torch.tensor(self.X, device=MLPDataset.device).float()
-        self.y = torch.tensor(self.y, device=MLPDataset.device)
+        self.X = torch.tensor(self.X).float()
+        self.y = torch.tensor(self.y)
         return self.X[idx:idx+self.window_size], self.y[idx:idx+self.window_size]
