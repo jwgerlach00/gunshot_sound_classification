@@ -23,7 +23,7 @@ class TrainingLoop:
         self.Dataset = Dataset
         self.model = ModelArchitecture(self.hyperparams).to(TrainingLoop.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.hyperparams['learning_rate'])
-        self.criterion = torch.nn.BCELoss()
+        self.criterion = torch.nn.MSELoss()
         
         self.train_loss_history = []
         self.val_loss_history = []
@@ -36,8 +36,8 @@ class TrainingLoop:
 
     def training_loop(self,):
         # Dataloaders
-        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,8)
-        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,2)
+        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,4)
+        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,1)
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             
@@ -48,26 +48,26 @@ class TrainingLoop:
             #         X_val = scaler.transform(X_val)
             
             # Batch train
+            self.model.train()
             batch_train_loss_history = []
             for (X, y) in tqdm(train_generator):
                 self.optimizer.zero_grad()
-                self.model.train()
+                
                 y_p = self.model(X)
-                loss = self.criterion(y_p,y)
+                loss = self.criterion(y_p.squeeze(),y)
 
                 loss.backward()
                 self.optimizer.step()
                 batch_train_loss_history.append(loss.item())
             
             # Batch validation
+            self.model.eval()
             batch_val_loss_history = []
             for (X, y) in tqdm(val_generator):
-                self.model.eval()
-                
                 with torch.no_grad():
                     y_p = self.model(X)
                 
-                loss = self.criterion(y_p, y)
+                loss = self.criterion(y_p.squeeze(), y)
                 batch_val_loss_history.append(loss.item())
             
             # Batch average loss
@@ -119,7 +119,6 @@ class TrainingLoop:
             model.eval()
             with torch.no_grad():
                 y_p = TrainingLoop.model_output_to_classes(model(X))
-                print(y_p)
                 sum += torch.sum(y == y_p).item()
                 length += len(y_p)
         return sum/length

@@ -3,22 +3,17 @@ import torch
 from helpers.AudioSampler import AudioSampler
 
 class MLPModel(nn.Module):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
     def __init__(self, hyperparams:dict):
         super(MLPModel, self).__init__()
-        
-        self.relu = nn.ReLU() # Activation function
         self.input = nn.Linear(hyperparams['window_size'], 20)
-
+        self.relu = nn.ReLU() # Activation function
         self.hidden_layer = nn.Linear(20, hyperparams['num_classes'])
-        self.output = nn.Softmax(dim=1)
+        self.output = nn.Sigmoid()
         
     def forward(self, x):
         x = self.relu(self.input(x))
         x = self.hidden_layer(x)
-
-        return self.output(x).view(-1)
+        return self.output(x)
 
 
 class MLPDataset(torch.utils.data.Dataset):
