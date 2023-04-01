@@ -7,14 +7,20 @@ from torchsummary import summary
 if __name__ == '__main__':
     hyperparams = get_model_params()
 
-    train = True #set to train and save, or load and eval
+    train = False #set to train and save, or load and eval
+    reload = True
+
     if train == True:
-        training_loop = TrainingLoop(MLPModel, MLPDataset, hyperparams)
+        if reload == True:
+            training_loop = joblib.load('mlp.joblib') 
+        else:
+            training_loop = TrainingLoop(MLPModel, MLPDataset, hyperparams)
         #summary(training_loop.model,(32,100))
         training_loop.training_loop()
         joblib.dump(training_loop, 'mlp.joblib') #save model
     else:
         training_loop = joblib.load('mlp.joblib') 
 
-    #print('Train accuracy: {0}%\nVal accuracy: {1}%'.format(training_loop.train_acc, training_loop.val_acc))
+    model_accuracy = training_loop.accuracy(training_loop.model,training_loop.dataloader(MLPDataset, hyperparams,4))
+    print('Model accuracy: {0}%\n'.format(model_accuracy))
     training_loop.plot_loss()

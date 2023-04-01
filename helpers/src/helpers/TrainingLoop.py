@@ -89,8 +89,8 @@ class TrainingLoop:
     def plot_loss(train_loss_history:List[float], val_loss_history:List[float], hyperparams:dict) -> None:
         plt.figure()
         plt.title('Loss curve')
-        plt.plot(range(hyperparams['epochs']), train_loss_history, label='train loss')
-        plt.plot(range(hyperparams['epochs']), val_loss_history, label='val loss')
+        plt.plot(range(len(train_loss_history)), train_loss_history, label='train loss')
+        plt.plot(range(len(val_loss_history)), val_loss_history, label='val loss')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.legend()
@@ -107,18 +107,13 @@ class TrainingLoop:
         TrainingLoop.save_model(self.model, path)
     
     @staticmethod
-    def model_output_to_classes(model_output:torch.Tensor) -> torch.Tensor:
-        '''not working with current dimensions...'''
-        return torch.max(model_output)
-
-    @staticmethod
     def accuracy(model:torch.nn.Module, dataloader:torch.utils.data.DataLoader) -> float:
         sum = 0
         length = 0
         for (X, y) in tqdm(dataloader):
             model.eval()
             with torch.no_grad():
-                y_p = TrainingLoop.model_output_to_classes(model(X))
-                sum += torch.sum(y == y_p).item()
+                y_p = model(X)
+                sum += torch.sum(y == torch.round(y_p)).item()
                 length += len(y_p)
         return sum/length

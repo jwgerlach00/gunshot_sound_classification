@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 class AudioSampler:
-    random.seed(42)
+    #random.seed(42)
     
     def __init__(self):
         pass
