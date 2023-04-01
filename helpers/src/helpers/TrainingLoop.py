@@ -23,7 +23,7 @@ class TrainingLoop:
         self.Dataset = Dataset
         self.model = ModelArchitecture(self.hyperparams).to(TrainingLoop.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.hyperparams['learning_rate'])
-        self.criterion = None # Set in training_loop()
+        self.criterion = torch.nn.BCELoss()
         
         self.train_loss_history = []
         self.val_loss_history = []
@@ -35,8 +35,6 @@ class TrainingLoop:
         return DataLoader(Dataset(hyperparams,size), batch_size=hyperparams['batch_size'])
 
     def training_loop(self,):
-        self.criterion = torch.nn.BCELoss()
-
         # Dataloaders
         train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,8)
         val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,2)
@@ -54,7 +52,6 @@ class TrainingLoop:
             for (X, y) in tqdm(train_generator):
                 self.optimizer.zero_grad()
                 self.model.train()
-                
                 y_p = self.model(X)
                 loss = self.criterion(y_p,y)
 
@@ -66,6 +63,7 @@ class TrainingLoop:
             batch_val_loss_history = []
             for (X, y) in tqdm(val_generator):
                 self.model.eval()
+                
                 with torch.no_grad():
                     y_p = self.model(X)
                 

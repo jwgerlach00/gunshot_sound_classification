@@ -16,7 +16,7 @@ class MLPModel(nn.Module):
         
     def forward(self, x):
         x = self.relu(self.input(x))
-        x = self.hidden_layer(x) # No relu at end because output is softmax
+        x = self.hidden_layer(x)
 
         return self.output(x).view(-1)
 
@@ -27,8 +27,8 @@ class MLPDataset(torch.utils.data.Dataset):
     def __init__(self,hyperparams,size):
         self.window_size = hyperparams['window_size']
         self.X,self.y = MLPDataset.data.sample_array(size,self.window_size, convert_to_mono=True)
-        self.X = torch.tensor(self.X)
-        self.y = torch.tensor(self.y)
+        self.X = torch.tensor(self.X,requires_grad=True)
+        self.y = torch.tensor(self.y,requires_grad=True)
     
     def __len__(self):
         return len(self.X)
