@@ -10,10 +10,11 @@ import numpy as np
 
 
 class TrainingLoop:
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    def __init__(self, ModelArchitecture:torch.nn.Module, Dataset:torch.utils.data.Dataset, hyperparams):
-        print(f'Using device: {TrainingLoop.device}')
+    def __init__(self, ModelArchitecture:torch.nn.Module, Dataset:torch.utils.data.Dataset, hyperparams, device):
+        print(f'Using device: {device}')
+        
+        self.device = device
         
         # Set instance methods
         self.plot_loss = self._plot_loss
@@ -21,9 +22,9 @@ class TrainingLoop:
         
         self.hyperparams = deepcopy(hyperparams)
         self.Dataset = Dataset
-        self.model = ModelArchitecture(self.hyperparams).to(TrainingLoop.device)
+        self.model = ModelArchitecture(self.hyperparams).to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.hyperparams['learning_rate'])
-        self.criterion = torch.nn.MSELoss()
+        self.criterion = torch.nn.BCELoss()
         
         self.train_loss_history = []
         self.val_loss_history = []
@@ -31,13 +32,13 @@ class TrainingLoop:
         self.train_acc = None
     
     @staticmethod
-    def dataloader(Dataset:torch.utils.data.Dataset, hyperparams:dict,size:int) -> DataLoader:
-        return DataLoader(Dataset(hyperparams,size), batch_size=hyperparams['batch_size'])
+    def dataloader(Dataset:torch.utils.data.Dataset, hyperparams:dict,size:int, device) -> DataLoader:
+        return DataLoader(Dataset(hyperparams, size, device), batch_size=hyperparams['batch_size'])
 
-    def training_loop(self,):
+    def training_loop(self):
         # Dataloaders
-        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,4)
-        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams,1)
+        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, 100, self.device)
+        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, 20, self.device)
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             

@@ -52,40 +52,6 @@ def nearest_neighbors_ann(imu_t:List[float], ann:List[int], ann_t:List[float]) -
         'ann_time': imu_t
     }
 
-def read_all_data(dir_path:str='processed_training_data') -> Dict[str, pd.DataFrame]:
-    imu = pd.DataFrame()
-    imu_t = pd.DataFrame()
-    ann = pd.DataFrame()
-    ann_t = pd.DataFrame()
-
-    for f in os.listdir(dir_path):
-        x = pd.read_csv(f'{dir_path}/{f}')
-        if f[-7:] == '__x.csv':
-            imu = pd.concat([imu, x], axis=0)
-        
-        elif f[-12:] == '__x_time.csv':
-            imu_t = pd.concat([imu_t, x], axis=0)
-            
-        elif f[-7:] == '__y.csv':
-            ann = pd.concat([ann, x], axis=0)
-            
-        elif f[-12:] == '__y_time.csv':
-            ann_t = pd.concat([ann_t, x], axis=0)
-
-    return {
-        'imu': imu.reset_index(drop=True),
-        'imu_t': imu_t.reset_index(drop=True),
-        'ann': ann.reset_index(drop=True),
-        'ann_t': ann_t.reset_index(drop=True)
-    }
-
-def get_imu_data():
-    data_dict = read_all_data()
-    imu = data_dict['imu'].to_numpy()
-    ann = data_dict['ann'].to_numpy().flatten()
-    del data_dict # Remove to free memory
-    return imu,ann
-
 def get_model_params():
     with open('MLP/mlp_hyperparams.yaml', 'r') as f:
         hyperparams = yaml.safe_load(f)
