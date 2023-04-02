@@ -28,7 +28,10 @@ class AudioSampler:
         env_clip = environment[env_clip_start:env_clip_start+ENV_LENGTH]
 
         overlay = AudioSegment.from_wav(overlay_path)
-        rand_pos = random.randint(0, ENV_LENGTH - len(overlay)) # ms
+        try:
+            rand_pos = random.randint(0, ENV_LENGTH - len(overlay)) # ms
+        except:
+            print(len(overlay), len(env_clip))
         rand_volume = random.randint(-10, 10) # dB
         
         y = []
@@ -113,7 +116,11 @@ class AudioSampler:
         all_overlay_files = []
         for x in os.listdir(overlay_dir):
             for y in os.listdir(f'{overlay_dir}/{x}'):
-                all_overlay_files.append(f'{x}/{y}')
+                overlay = AudioSegment.from_wav(f'{overlay_dir}/{x}/{y}')
+                if len(overlay) < 5000:
+                    all_overlay_files.append(f'{x}/{y}')
+                else:
+                    print(f'{x}/{y} is too long ({len(overlay)}ms)')
 
         
 

@@ -22,6 +22,6 @@ if __name__ == '__main__':
     else:
         training_loop = joblib.load('mlp.joblib') 
 
-    model_accuracy = training_loop.accuracy(training_loop.model,training_loop.dataloader(MLPDataset, hyperparams, 4, torch.device('cuda')))
+    model_accuracy = training_loop.accuracy(training_loop.model,training_loop.dataloader(MLPDataset, hyperparams, 1000, torch.device('cuda')))
     print('Model accuracy: {0}%\n'.format(model_accuracy))
     training_loop.plot_loss()
