@@ -17,7 +17,7 @@ class AudioSampler:
         pass
         
     @staticmethod
-    def random_overlay(environment_path:str, overlay_path:str, frame_rate_multiplier:bool=False) -> Dict[str, Union[AudioSegment, int]]:
+    def random_overlay(environment_path:str, overlay_path:str, frame_rate_multiplier:bool=False, match_fr=False) -> Dict[str, Union[AudioSegment, int]]:
         '''
         Overlays an audio file on top of another (environmental) audio file.
         Randomizes the position and volume of the overlay.
@@ -28,6 +28,8 @@ class AudioSampler:
         env_clip = environment[env_clip_start:env_clip_start+ENV_LENGTH]
 
         overlay = AudioSegment.from_wav(overlay_path)
+        if match_fr and overlay.frame_rate != match_fr:
+            overlay = overlay.set_frame_rate(match_fr) # Give everything a consistent frame rate
         try:
             rand_pos = random.randint(0, ENV_LENGTH - len(overlay)) # ms
         except:
@@ -126,7 +128,9 @@ class AudioSampler:
                     print(f'{x}/{y} is too long ({len(overlay)}ms)')
         
         X = []
-        y = []        
+        Y = []
+        # max_length = 0
+        max_fr = 0
         for _ in tqdm(range(n)):
             random_environment_file = random.choice(all_environment_files)
             environment_path = f'{environment_dir}/{random_environment_file}'
@@ -134,16 +138,25 @@ class AudioSampler:
             random_overlay_file = random.choice(all_overlay_files)
             overlay_path = f'{overlay_dir}/{random_overlay_file}'
 
-            audio = AudioSampler.random_overlay(environment_path, overlay_path, frame_rate_multiplier=True)
+            audio = AudioSampler.random_overlay(environment_path, overlay_path, frame_rate_multiplier=True, match_fr=48000)
             if convert_to_mono:
                 audio['audio'] = audio['audio'].set_channels(1)
-                
-            X.append(AudioSampler.pydub_data(audio['audio'])['arr'])
-            y.append(audio['y'])
+            
+            x = AudioSampler.pydub_data(audio['audio'])['arr']
+            X.append(x)
+            Y.append(audio['y'])
+            max_fr = audio['audio'].frame_rate if audio['audio'].frame_rate > max_fr else max_fr
+            # max_len = len(x) if len(x) > max_length else max_length
+            
+        # for i, (x, y) in enumerate(zip(X, Y)):
+        #     if len(x) < max_len:
+        #         X[i] = np.pad(x, (0, max_len-len(x)), 'constant')
+        #         Y[i] = np.pad(y, (0, max_len-len(x)), 'constant')
             
         return (
             np.array(X, dtype=np.float32),
-            np.array(y, dtype=np.float32)
+            np.array(Y, dtype=np.float32),
+            max_fr
         )
                     
         
