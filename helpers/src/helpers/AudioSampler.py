@@ -17,7 +17,7 @@ class AudioSampler:
         pass
         
     @staticmethod
-    def random_overlay(environment_path:str, overlay_path:str) -> Dict[str, Union[AudioSegment, int]]:
+    def random_overlay(environment_path:str, overlay_path:str, frame_rate_multiplier:bool=False, match_fr=False) -> Dict[str, Union[AudioSegment, int]]:
         '''
         Overlays an audio file on top of another (environmental) audio file.
         Randomizes the position and volume of the overlay.
@@ -28,21 +28,31 @@ class AudioSampler:
         env_clip = environment[env_clip_start:env_clip_start+ENV_LENGTH]
 
         overlay = AudioSegment.from_wav(overlay_path)
+        if match_fr and overlay.frame_rate != match_fr:
+            overlay = overlay.set_frame_rate(match_fr) # Give everything a consistent frame rate
         try:
             rand_pos = random.randint(0, ENV_LENGTH - len(overlay)) # ms
         except:
             print(len(overlay), len(env_clip))
         rand_volume = random.randint(-10, 10) # dB
         
+        out_clip = env_clip.overlay(overlay + rand_volume, position=rand_pos)
+        
         y = []
         for x in range(ENV_LENGTH):
             if x < rand_pos or x > rand_pos+len(overlay):
-                y.append(0)
+                if frame_rate_multiplier:
+                    y.extend([0]*(out_clip.frame_rate//1000)) # 1000 ms
+                else:
+                    y.append(0)
             else:
-                y.append(1)
+                if frame_rate_multiplier:
+                    y.extend([1]*(out_clip.frame_rate//1000)) # 1000 ms
+                else:
+                    y.append(1)
 
         return {
-            'audio': env_clip.overlay(overlay + rand_volume, position=rand_pos),
+            'audio': out_clip,
             'pos': rand_pos,
             'volume': rand_volume,
             'y' :  y
@@ -96,6 +106,61 @@ class AudioSampler:
             
             yield AudioSampler.pydub_data(audio['audio'])['arr'], audio['y']
             value += 1
+    
+    @staticmethod
+    def sample_array_2(n, convert_to_mono):
+        # enrionment_path
+        environment_dir = 'environment_sounds'
+        all_environment_files = []
+        for x in os.listdir(environment_dir):
+            if x.endswith(".wav"):
+                all_environment_files.append(x)
+
+        # gunshot path
+        overlay_dir = 'kaggle_sounds'
+        all_overlay_files = []
+        for x in os.listdir(overlay_dir):
+            for y in os.listdir(f'{overlay_dir}/{x}'):
+                overlay = AudioSegment.from_wav(f'{overlay_dir}/{x}/{y}')
+                if len(overlay) < 5000:
+                    all_overlay_files.append(f'{x}/{y}')
+                else:
+                    print(f'{x}/{y} is too long ({len(overlay)}ms)')
+        
+        X = []
+        Y = []
+        # max_length = 0
+        max_fr = 0
+        for _ in tqdm(range(n)):
+            random_environment_file = random.choice(all_environment_files)
+            environment_path = f'{environment_dir}/{random_environment_file}'
+
+            random_overlay_file = random.choice(all_overlay_files)
+            overlay_path = f'{overlay_dir}/{random_overlay_file}'
+
+            audio = AudioSampler.random_overlay(environment_path, overlay_path, frame_rate_multiplier=True, match_fr=48000)
+            if convert_to_mono:
+                audio['audio'] = audio['audio'].set_channels(1)
+            
+            x = AudioSampler.pydub_data(audio['audio'])['arr']
+            X.append(x)
+            Y.append(audio['y'])
+            max_fr = audio['audio'].frame_rate if audio['audio'].frame_rate > max_fr else max_fr
+            # max_len = len(x) if len(x) > max_length else max_length
+            
+        # for i, (x, y) in enumerate(zip(X, Y)):
+        #     if len(x) < max_len:
+        #         X[i] = np.pad(x, (0, max_len-len(x)), 'constant')
+        #         Y[i] = np.pad(y, (0, max_len-len(x)), 'constant')
+            
+        return (
+            np.array(X, dtype=np.float32),
+            np.array(Y, dtype=np.float32),
+            max_fr
+        )
+                    
+        
+        
             
     def sample_array(self, n:int, window_size:int, convert_to_mono:bool) -> Dict[str, Union[np.ndarray, int, dict]]:
         '''
@@ -143,7 +208,7 @@ class AudioSampler:
                 'position_ms': audio['pos'],
                 'volume_db': audio['volume']
             }
-            
+
             clip = AudioSampler.pydub_data(audio['audio'])['arr']
             labels = audio['y']
 
