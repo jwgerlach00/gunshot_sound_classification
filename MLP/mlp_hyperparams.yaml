@@ -4,7 +4,8 @@ learning_rate: 0.001 # Float
 num_classes: 1 # Int
 window_size: 100
 weighted_loss: False # Boolean
-val_size: 0.2 # Float: Size of validation in train/val split
+loss: mse
+
 shuffle_split: True # Boolean: whether to shuffle samples. NOT FOR TIMESERIES
 normalize:
   run: True # Boolean: bypasses method

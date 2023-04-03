@@ -24,7 +24,10 @@ class TrainingLoop:
         self.Dataset = Dataset
         self.model = ModelArchitecture(self.hyperparams).to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.hyperparams['learning_rate'])
-        self.criterion = torch.nn.BCELoss()
+        if self.hyperparams['loss'] == 'mse':
+            self.criterion = torch.nn.MSELoss()
+        elif self.hyperparams['loss'] == 'bce':
+            self.criterion = torch.nn.BCELoss()
         
         self.train_loss_history = []
         self.val_loss_history = []
@@ -32,13 +35,13 @@ class TrainingLoop:
         self.train_acc = None
     
     @staticmethod
-    def dataloader(Dataset:torch.utils.data.Dataset, hyperparams:dict,size:int, device) -> DataLoader:
-        return DataLoader(Dataset(hyperparams, size, device), batch_size=hyperparams['batch_size'])
+    def dataloader(Dataset:torch.utils.data.Dataset, hyperparams:dict, size:int, device) -> DataLoader:
+        return DataLoader(Dataset(size, device, hyperparams), batch_size=hyperparams['batch_size'])
 
     def training_loop(self):
         # Dataloaders
-        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, 5000, self.device)
-        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, 1000, self.device)
+        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, 1000, self.device)
+        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, 200, self.device)
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             
@@ -55,7 +58,10 @@ class TrainingLoop:
                 self.optimizer.zero_grad()
                 
                 y_p = self.model(X)
-                loss = self.criterion(y_p.squeeze(),y)
+                if self.hyperparams['window_size']:
+                    loss = self.criterion(y_p.squeeze(),y)
+                else:
+                    loss = self.criterion(y_p, y)
 
                 loss.backward()
                 self.optimizer.step()

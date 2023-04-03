@@ -19,7 +19,7 @@ class MLPModel(nn.Module):
 class MLPDataset(torch.utils.data.Dataset):
     data = AudioSampler()
 
-    def __init__(self, hyperparams, size, device):
+    def __init__(self, size, device, hyperparams):
         self.device = device
         self.window_size = hyperparams['window_size']
         self.X, self.y = MLPDataset.data.sample_array(size, self.window_size, convert_to_mono=True)
