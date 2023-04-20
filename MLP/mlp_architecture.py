@@ -8,7 +8,7 @@ class MLPModel(nn.Module):
         self.input = nn.Linear(hyperparams['window_size'], 20)
         self.relu = nn.ReLU() # Activation function
         self.hidden_layer = nn.Linear(20, hyperparams['num_classes'])
-        self.output = nn.Sigmoid()
+        self.output = nn.Tanh()
         
     def forward(self, x):
         x = self.relu(self.input(x))
