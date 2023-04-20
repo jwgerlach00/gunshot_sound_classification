@@ -13,15 +13,15 @@ if __name__ == '__main__':
 
     if train == True:
         if reload == True:
-            training_loop = joblib.load('mlp.joblib') 
+            training_loop = joblib.load('mlpd.joblib') 
         else:
             training_loop = TrainingLoop(MLPModel, MLPDataset, hyperparams, torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
         #summary(training_loop.model,(32,100))
         training_loop.training_loop()
-        joblib.dump(training_loop, 'mlp.joblib') #save model
+        joblib.dump(training_loop, 'mlpd.joblib') #save model
     else:
-        training_loop = joblib.load('mlp.joblib') 
+        training_loop = joblib.load('mlpd.joblib') 
 
-    model_accuracy = training_loop.accuracy(training_loop.model,training_loop.dataloader(MLPDataset, hyperparams, 1000, torch.device('cuda')))
+    model_accuracy = training_loop.accuracy(training_loop.model,training_loop.dataloader(MLPDataset, hyperparams, hyperparams['training_amount'], torch.device('cuda')))
     print('Model accuracy: {0}%\n'.format(model_accuracy))
     training_loop.plot_loss()
