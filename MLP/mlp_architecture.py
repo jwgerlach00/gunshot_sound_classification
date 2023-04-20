@@ -5,9 +5,9 @@ from helpers.AudioSampler import AudioSampler
 class MLPModel(nn.Module):
     def __init__(self, hyperparams:dict):
         super(MLPModel, self).__init__()
-        self.input = nn.Linear(hyperparams['window_size'], 20)
+        self.input = nn.Linear(hyperparams['window_size'], hyperparams['hidden_size'])
         self.relu = nn.ReLU() # Activation function
-        self.hidden_layer = nn.Linear(20, hyperparams['num_classes'])
+        self.hidden_layer = nn.Linear(hyperparams['hidden_size'], hyperparams['num_classes'])
         self.output = nn.Tanh()
         
     def forward(self, x):
@@ -22,7 +22,7 @@ class MLPDataset(torch.utils.data.Dataset):
     def __init__(self, size, device, hyperparams):
         self.device = device
         self.window_size = hyperparams['window_size']
-        self.X, self.y = MLPDataset.data.sample_array(size, self.window_size, convert_to_mono=True)
+        self.X, self.y = MLPDataset.data.sample_array(size, self.window_size, convert_to_mono=True,output_spectrogram=True)
     
     def __len__(self):
         return len(self.X)

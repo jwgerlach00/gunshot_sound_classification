@@ -10,6 +10,30 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
+def detect_leading_silence(sound, silence_threshold=-50.0, chunk_size=10):
+    '''
+    sound is a pydub.AudioSegment
+    silence_threshold in dB
+    chunk_size in ms
+
+    iterate over chunks until you find the first one with sound
+    '''
+    trim_ms = 0 # ms
+
+    assert chunk_size > 0 # to avoid infinite loop
+    while sound[trim_ms:trim_ms+chunk_size].dBFS < silence_threshold and trim_ms < len(sound):
+        trim_ms += chunk_size
+
+    return trim_ms
+
+def trim_audio(audio):
+    start_trim = detect_leading_silence(audio)
+    end_trim = detect_leading_silence(audio.reverse())
+
+    duration = len(audio)    
+    trimmed_sound = audio[start_trim:duration-end_trim]
+    return trimmed_sound
+
 class AudioSampler:
     #random.seed(42)
     
@@ -28,6 +52,7 @@ class AudioSampler:
         env_clip = environment[env_clip_start:env_clip_start+ENV_LENGTH]
 
         overlay = AudioSegment.from_wav(overlay_path)
+        overlay = trim_audio(overlay)
         if match_fr and overlay.frame_rate != match_fr:
             overlay = overlay.set_frame_rate(match_fr) # Give everything a consistent frame rate
         try:
@@ -37,7 +62,7 @@ class AudioSampler:
         rand_volume = random.randint(-10, 10) # dB
         
         out_clip = env_clip.overlay(overlay + rand_volume, position=rand_pos)
-        
+        out_clip = out_clip.low_pass_filter(16000).high_pass_filter(5000)
         y = []
         for x in range(ENV_LENGTH):
             if x < rand_pos or x > rand_pos+len(overlay):
@@ -80,8 +105,10 @@ class AudioSampler:
         plt.pcolormesh(t, f, Sxx)
         plt.ylabel('Frequency [Hz]')
         plt.xlabel('Time [sec]')
+        plt.show()
+        plt.close()
         
-        return fig
+        return f, t, Sxx
     
     def sample_generator(self, n:int, convert_to_mono:bool) -> Dict[str, Union[AudioSegment, int, np.ndarray, dict]]:
         '''
@@ -162,7 +189,7 @@ class AudioSampler:
         
         
             
-    def sample_array(self, n:int, window_size:int, convert_to_mono:bool) -> Dict[str, Union[np.ndarray, int, dict]]:
+    def sample_array(self, n:int, window_size:int, convert_to_mono:bool,output_spectrogram=False) -> Dict[str, Union[np.ndarray, int, dict]]:
         '''
         Returns a numpy array of audio samples.
         '''
@@ -181,11 +208,7 @@ class AudioSampler:
         all_overlay_files = []
         for x in os.listdir(overlay_dir):
             for y in os.listdir(f'{overlay_dir}/{x}'):
-                overlay = AudioSegment.from_wav(f'{overlay_dir}/{x}/{y}')
-                if len(overlay) < 5000:
-                    all_overlay_files.append(f'{x}/{y}')
-                else:
-                    print(f'{x}/{y} is too long ({len(overlay)}ms)')
+                all_overlay_files.append(f'{x}/{y}')
 
         
 
@@ -208,10 +231,13 @@ class AudioSampler:
                 'position_ms': audio['pos'],
                 'volume_db': audio['volume']
             }
-
-            clip = AudioSampler.pydub_data(audio['audio'])['arr']
+            
+            clip_data = AudioSampler.pydub_data(audio['audio'])
+            clip = clip_data['arr']
             labels = audio['y']
-
+            frame_rate = clip_data['fr']
+            f, t, Sxx = AudioSampler.spectrogram(clip, frame_rate) #22kHz high, 1kHz noise floor
+            print(Sxx.shape)
             for i in range(len(clip)):
                 try:
                     w = len(clip[i:i+window_size])
@@ -220,8 +246,18 @@ class AudioSampler:
                         X.append(clip[i:i+window_size])
                 except:
                     pass
-            
-        return np.array(X,dtype=np.float32), np.array(y,dtype=np.float32)
+        
+        X = np.array(X,dtype=np.float32)
+        y = np.array(y,dtype=np.float32)
+        if output_spectrogram:
+            #output the windows as spectrograms
+            temp = []
+            for windowed_sound_clip in X:
+                f, t, Sxx = AudioSampler.spectrogram(windowed_sound_clip, frame_rate)
+                temp.append(Sxx)
+            return temp,y
+        else:
+            return X,y
 
 
 
