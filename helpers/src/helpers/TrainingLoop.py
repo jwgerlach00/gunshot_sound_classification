@@ -40,8 +40,8 @@ class TrainingLoop:
 
     def training_loop(self):
         # Dataloaders
-        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, 1000, self.device)
-        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, 200, self.device)
+        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, self.hyperparams['training_amount'], self.device)
+        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, self.hyperparams['validation_amount'], self.device)
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             
