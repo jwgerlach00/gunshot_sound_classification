@@ -101,12 +101,12 @@ class AudioSampler:
         f, t, Sxx = scipy.signal.spectrogram(arr, fs=frame_rate)
         Sxx = 10 * np.log10(Sxx + 1e-9)
         
-        fig = plt.figure()
-        plt.pcolormesh(t, f, Sxx)
-        plt.ylabel('Frequency [Hz]')
-        plt.xlabel('Time [sec]')
-        plt.show()
-        plt.close()
+        # fig = plt.figure()
+        # plt.pcolormesh(t, f, Sxx)
+        # plt.ylabel('Frequency [Hz]')
+        # plt.xlabel('Time [sec]')
+        # plt.show()
+        # plt.close()
         
         return f, t, Sxx
     
@@ -207,14 +207,16 @@ class AudioSampler:
         overlay_dir = 'kaggle_sounds'
         all_overlay_files = []
         for x in os.listdir(overlay_dir):
-            if os.path.isdir(f'{overlay_dir}/{x}'):
+            if x != '.DS_Store':
                 for y in os.listdir(f'{overlay_dir}/{x}'):
-                    all_overlay_files.append(f'{x}/{y}')
+                    if y != '.DS_Store':
+                        all_overlay_files.append(f'{x}/{y}')
 
         
 
         X = []
         y = []
+        spectrograms = []
         print('Generating Dataset...')
         for _ in tqdm(range(n)):
             random_environment_file = random.choice(all_environment_files)
@@ -232,31 +234,35 @@ class AudioSampler:
                 'position_ms': audio['pos'],
                 'volume_db': audio['volume']
             }
+
             
             clip_data = AudioSampler.pydub_data(audio['audio'])
             clip = clip_data['arr']
             labels = audio['y']
             frame_rate = clip_data['fr']
-            for i in range(len(clip)):
-                try:
-                    w = len(clip[i:i+window_size])
-                    if w == window_size:
-                        y.append(labels[i:i+window_size][-1])
-                        X.append(clip[i:i+window_size])
-                except:
-                    pass
-        
-        X = np.array(X,dtype=np.float32)
-        y = np.array(y,dtype=np.float32)
-        if output_spectrogram:
-            #output the windows as spectrograms
-            temp = []
-            for windowed_sound_clip in X:
-                f, t, Sxx = AudioSampler.spectrogram(windowed_sound_clip, frame_rate)
-                temp.append(Sxx)
-            return temp,y
-        else:
-            return X,y
+            if output_spectrogram:
+                f, t, Sxx = AudioSampler.spectrogram(clip, frame_rate)
+                spectrograms.append((f, t, Sxx))
+                Sxx = np.array(Sxx).swapaxes(0,1)
+                for i in range(len(Sxx)):
+                    try:
+                        w = len(Sxx[i:i+window_size])
+                        if w == window_size:
+                            y.append(labels[i:i+window_size][-1])
+                            X.append(Sxx[i:i+window_size])
+                    except:
+                        pass
+            else:
+                for i in range(len(clip)):
+                    try:
+                        w = len(clip[i:i+window_size])
+                        if w == window_size:
+                            y.append(labels[i:i+window_size][-1])
+                            X.append(clip[i:i+window_size])
+                    except:
+                        pass
+        X,y = np.array(X,dtype=np.float32), np.array(y,dtype=np.float32)
+        return X,y,spectrograms
 
 
 
@@ -271,9 +277,7 @@ if __name__ == '__main__':
     if os.path.exists(f'{out_dir}/metadata.yaml'):
         os.remove(f'{out_dir}/metadata.yaml')
     
-    audio = AudioSampler()
-    arr = audio.sample_array(5, 5, True, False)
-    print(arr)
+    audio = AudioSampler(environment_path, overlay_path)
     
     ''' Not needed now
     for i, x in enumerate(audio.sample_generator(5, True)):

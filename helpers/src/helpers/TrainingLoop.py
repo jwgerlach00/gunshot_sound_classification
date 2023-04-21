@@ -7,7 +7,7 @@ from tqdm import tqdm
 from typing import List
 from copy import deepcopy
 import numpy as np
-
+import joblib
 
 class TrainingLoop:
     
@@ -38,10 +38,23 @@ class TrainingLoop:
     def dataloader(Dataset:torch.utils.data.Dataset, hyperparams:dict, size:int, device) -> DataLoader:
         return DataLoader(Dataset(size, device, hyperparams), batch_size=hyperparams['batch_size'])
 
-    def training_loop(self):
+    def training_loop(self,old_data=False):
         # Dataloaders
-        train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, self.hyperparams['training_amount'], self.device)
-        val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, self.hyperparams['validation_amount'], self.device)
+        if old_data:
+            try:
+                print('Using Saved Previously-Generated Data')
+                train_generator = joblib.load('training_dataloader.joblib') 
+                val_generator = joblib.load('validation_dataloader.joblib') 
+            except:
+                train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, self.hyperparams['training_amount'], self.device)
+                val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, self.hyperparams['validation_amount'], self.device)
+                joblib.dump(train_generator, 'training_dataloader.joblib')
+                joblib.dump(val_generator, 'validation_dataloader.joblib')
+        else:
+            train_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, self.hyperparams['training_amount'], self.device)
+            val_generator = TrainingLoop.dataloader(self.Dataset, self.hyperparams, self.hyperparams['validation_amount'], self.device)
+            joblib.dump(train_generator, 'training_dataloader.joblib')
+            joblib.dump(val_generator, 'validation_dataloader.joblib')
         for epoch in range(1, self.hyperparams['epochs'] + 1):
             print(f'Epoch {epoch}')
             
