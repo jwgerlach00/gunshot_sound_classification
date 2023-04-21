@@ -207,8 +207,9 @@ class AudioSampler:
         overlay_dir = 'kaggle_sounds'
         all_overlay_files = []
         for x in os.listdir(overlay_dir):
-            for y in os.listdir(f'{overlay_dir}/{x}'):
-                all_overlay_files.append(f'{x}/{y}')
+            if os.path.isdir(f'{overlay_dir}/{x}'):
+                for y in os.listdir(f'{overlay_dir}/{x}'):
+                    all_overlay_files.append(f'{x}/{y}')
 
         
 
@@ -236,8 +237,6 @@ class AudioSampler:
             clip = clip_data['arr']
             labels = audio['y']
             frame_rate = clip_data['fr']
-            f, t, Sxx = AudioSampler.spectrogram(clip, frame_rate) #22kHz high, 1kHz noise floor
-            print(Sxx.shape)
             for i in range(len(clip)):
                 try:
                     w = len(clip[i:i+window_size])
@@ -272,7 +271,9 @@ if __name__ == '__main__':
     if os.path.exists(f'{out_dir}/metadata.yaml'):
         os.remove(f'{out_dir}/metadata.yaml')
     
-    audio = AudioSampler(environment_path, overlay_path)
+    audio = AudioSampler()
+    arr = audio.sample_array(5, 5, True, False)
+    print(arr)
     
     ''' Not needed now
     for i, x in enumerate(audio.sample_generator(5, True)):
