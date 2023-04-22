@@ -1,7 +1,7 @@
 from pydub import AudioSegment
 # from pydub.playback import play
 import random
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 import os
 import yaml
 import numpy as np
@@ -35,13 +35,32 @@ def trim_audio(audio):
     return trimmed_sound
 
 class AudioSampler:
-    #random.seed(42)
+    random.seed(42)
     
     def __init__(self):
         pass
+    
+    @staticmethod
+    def get_environment_paths(environment_dir:str='environment_sounds'):
+        all_environment_files = []
+        for x in os.listdir(environment_dir):
+            if x.endswith(".wav"):
+                all_environment_files.append(os.path.join(environment_dir, x))
+        return all_environment_files
+    
+    @staticmethod
+    def get_gunshot_paths(overlay_dir:str='kaggle_sounds'):
+        all_overlay_files = []
+        for x in os.listdir(overlay_dir):
+            if x != '.DS_Store':
+                for y in os.listdir(f'{overlay_dir}/{x}'):
+                    if y.endswith(".wav"):
+                        all_overlay_files.append(os.path.join(overlay_dir, x, y))
+        return all_overlay_files
         
     @staticmethod
-    def random_overlay(environment_path:str, overlay_path:str, frame_rate_multiplier:bool=False, match_fr=False) -> Dict[str, Union[AudioSegment, int]]:
+    def random_overlay(environment_path:str, overlay_path:str, frame_rate_multiplier:bool=False,
+                       match_fr:Optional[int]=None) -> Dict[str, Union[AudioSegment, int]]:
         '''
         Overlays an audio file on top of another (environmental) audio file.
         Randomizes the position and volume of the overlay.
@@ -99,95 +118,92 @@ class AudioSampler:
         Plots a spectrogram of numpy array audio data using matplotlib.
         '''
         f, t, Sxx = scipy.signal.spectrogram(arr, fs=frame_rate)
+        # Db scale (I think)
         Sxx = 10 * np.log10(Sxx + 1e-9)
-        
-        # fig = plt.figure()
-        # plt.pcolormesh(t, f, Sxx)
-        # plt.ylabel('Frequency [Hz]')
-        # plt.xlabel('Time [sec]')
-        # plt.show()
-        # plt.close()
-        
         return f, t, Sxx
     
-    def sample_generator(self, n:int, convert_to_mono:bool) -> Dict[str, Union[AudioSegment, int, np.ndarray, dict]]:
+    @staticmethod
+    def plot_spectrogram(t:np.ndarray, f:np.ndarray, Sxx:np.ndarray, y:Optional[np.ndarray]) -> tuple:
         '''
-        Generator function for randomizing a set of audio samples.
-        Returns metadata and spectrogram and numpy array of each sample in addition to the pydub audio object.
+        Plots the spectrogram and plots the boundaries for the y bit-vector if y is provided.
         '''
-        value = 0
-        while value < n:
-            audio = AudioSampler.random_overlay(self.environment_path, self.overlay_path)
+        fig, ax = plt.subplots()
+        # Shade according to the spectrogram
+        ax.pcolormesh(t, f, Sxx, shading='auto')
+        
+        # Add boundary lines for y bit-vector if provided
+        if isinstance(y, np.ndarray) or y:
+            # Find the indices of all the elements equal to 1
+            indices = np.where(y == 1)[0]
+            # Get the index of the first element equal to 1
+            first_index = indices[0]
+            # Get the index of the last element equal to 1
+            last_index = indices[-1]
             
-            if convert_to_mono:
-                audio['audio'] = audio['audio'].set_channels(1)
-            
-            meta = {
-                'position_ms': audio['pos'],
-                'volume_db': audio['volume']
-            }
-            
-            # sample = 
-            # sample['sound'] = audio['audio']
-            # sample['meta'] = meta
-            
-            yield AudioSampler.pydub_data(audio['audio'])['arr'], audio['y']
-            value += 1
+            ax.axvline(x=t[first_index], color='r')
+            ax.axvline(x=t[last_index], color='r')
+        
+        # Add labels
+        ax.set_xlabel('Frequency [Hz]')
+        ax.set_ylabel('Time [sec]')
+        ax.set_title('Spectrogram')
+        return fig, ax
     
     @staticmethod
-    def sample_array_2(n, convert_to_mono):
-        # enrionment_path
-        environment_dir = 'environment_sounds'
-        all_environment_files = []
-        for x in os.listdir(environment_dir):
-            if x.endswith(".wav"):
-                all_environment_files.append(x)
-
-        # gunshot path
-        overlay_dir = 'kaggle_sounds'
-        all_overlay_files = []
-        for x in os.listdir(overlay_dir):
-            for y in os.listdir(f'{overlay_dir}/{x}'):
-                overlay = AudioSegment.from_wav(f'{overlay_dir}/{x}/{y}')
-                if len(overlay) < 5000:
-                    all_overlay_files.append(f'{x}/{y}')
-                else:
-                    print(f'{x}/{y} is too long ({len(overlay)}ms)')
+    def spectrogram_downsample_y(y_ms, x_time):
+        '''
+        Downsamples y_ms to fit x_time using a nearest-neighbor approach. y is assumed to be in milliseconds while
+        x_time is assumed to be in seconds.
+        '''
+        y_time = np.array(range(0, len(y_ms))) / 1000 # ms to s
+        out = []
+        for x_t in x_time:
+            diff = np.absolute(y_time - x_t)
+            index = diff.argmin()
+            out.append(y_ms[index])
+        return np.array(out)
+    
+    @staticmethod
+    def sample_spectrogram(n:int, convert_to_mono:bool=True, show_plot:bool=False) -> tuple:
+        '''
+        Generates a random spectrogram and its corresponding y bit-vector (n) times. Randomly chooses an environment
+        and overlay file from paths specified within the classmethods.
+        '''
+        all_environment_files = AudioSampler.get_environment_paths()
+        all_overlay_files = AudioSampler.get_gunshot_paths()
         
-        X = []
-        Y = []
-        # max_length = 0
-        max_fr = 0
+        spectrograms = []
+        labels = []
         for _ in tqdm(range(n)):
-            random_environment_file = random.choice(all_environment_files)
-            environment_path = f'{environment_dir}/{random_environment_file}'
+            # Randomly choose an environment and overlay file
+            random_environment_path = random.choice(all_environment_files)
+            random_overlay_path = random.choice(all_overlay_files)
 
-            random_overlay_file = random.choice(all_overlay_files)
-            overlay_path = f'{overlay_dir}/{random_overlay_file}'
-
-            audio = AudioSampler.random_overlay(environment_path, overlay_path, frame_rate_multiplier=True, match_fr=48000)
+            # Generate the audio data
+            audio = AudioSampler.random_overlay(random_environment_path, random_overlay_path,
+                                                frame_rate_multiplier=False, match_fr=None)
+            
+            # Convert to a single channel if specified
             if convert_to_mono:
                 audio['audio'] = audio['audio'].set_channels(1)
             
-            x = AudioSampler.pydub_data(audio['audio'])['arr']
-            X.append(x)
-            Y.append(audio['y'])
-            max_fr = audio['audio'].frame_rate if audio['audio'].frame_rate > max_fr else max_fr
-            # max_len = len(x) if len(x) > max_length else max_length
+            clip_data = AudioSampler.pydub_data(audio['audio'])
+            clip = clip_data['arr']
+            frame_rate = clip_data['fr']
             
-        # for i, (x, y) in enumerate(zip(X, Y)):
-        #     if len(x) < max_len:
-        #         X[i] = np.pad(x, (0, max_len-len(x)), 'constant')
-        #         Y[i] = np.pad(y, (0, max_len-len(x)), 'constant')
+            # Generate the spectrogram
+            f, t, Sxx = AudioSampler.spectrogram(clip, frame_rate)
             
-        return (
-            np.array(X, dtype=np.float32),
-            np.array(Y, dtype=np.float32),
-            max_fr
-        )
+            spectrograms.append(Sxx)
+            labels.append(AudioSampler.spectrogram_downsample_y(audio['y'], t))
+            
+            # Plot the spectrogram if specified
+            if show_plot:
+                AudioSampler.plot_spectrogram(t, f, Sxx, labels[-1])
+                plt.show()
+
+        return spectrograms, labels
                     
-        
-        
             
     def sample_array(self, n:int, window_size:int, convert_to_mono:bool,output_spectrogram=False) -> Dict[str, Union[np.ndarray, int, dict]]:
         '''
@@ -217,6 +233,7 @@ class AudioSampler:
         X = []
         y = []
         spectrograms = []
+        clips = []
         print('Generating Dataset...')
         for _ in tqdm(range(n)):
             random_environment_file = random.choice(all_environment_files)
@@ -225,7 +242,7 @@ class AudioSampler:
             random_overlay_file = random.choice(all_overlay_files)
             self.overlay_path = f'{overlay_dir}/{random_overlay_file}'
 
-            audio = AudioSampler.random_overlay(self.environment_path, self.overlay_path)
+            audio = AudioSampler.random_overlay(self.environment_path, self.overlay_path, frame_rate_multiplier=True, match_fr=48000)
             
             if convert_to_mono:
                 audio['audio'] = audio['audio'].set_channels(1)
@@ -242,16 +259,18 @@ class AudioSampler:
             frame_rate = clip_data['fr']
             if output_spectrogram:
                 f, t, Sxx = AudioSampler.spectrogram(clip, frame_rate)
-                spectrograms.append((f, t, Sxx))
-                Sxx = np.array(Sxx).swapaxes(0,1)
-                for i in range(len(Sxx)):
-                    try:
-                        w = len(Sxx[i:i+window_size])
-                        if w == window_size:
-                            y.append(labels[i:i+window_size][-1])
-                            X.append(Sxx[i:i+window_size])
-                    except:
-                        pass
+                # spectrograms.append((f, t, Sxx))
+                clips.append(clip)
+                spectrograms.append(Sxx)
+                # Sxx = np.array(Sxx).swapaxes(0,1)
+                # for i in range(len(Sxx)):
+                #     try:
+                #         w = len(Sxx[i:i+window_size])
+                #         if w == window_size:
+                #             y.append(labels[i:i+window_size][-1])
+                #             X.append(Sxx[i:i+window_size])
+                #     except:
+                #         pass
             else:
                 for i in range(len(clip)):
                     try:
@@ -261,34 +280,12 @@ class AudioSampler:
                             X.append(clip[i:i+window_size])
                     except:
                         pass
+        if output_spectrogram:
+            return spectrograms
         X,y = np.array(X,dtype=np.float32), np.array(y,dtype=np.float32)
         return X,y,spectrograms
 
 
 
 if __name__ == '__main__':
-    # Environment Path
-    environment_path = f'city.wav'
-    
-    path_stem = 'kaggle_sounds'
-    overlay_path = f'{path_stem}/Zastava M92/9 (1).wav'
-    
-    out_dir = 'overlay_tests'
-    if os.path.exists(f'{out_dir}/metadata.yaml'):
-        os.remove(f'{out_dir}/metadata.yaml')
-    
-    audio = AudioSampler(environment_path, overlay_path)
-    
-    ''' Not needed now
-    for i, x in enumerate(audio.sample_generator(5, True)):
-        
-        AudioSampler.spectrogram(x['arr'], x['fr'])
-        plt.savefig(f'{out_dir}/random_overlay_{i}.png')
-        
-        out_path = f'{out_dir}/random_overlay_{i}.wav'
-        x['sound'].export(out_path, format='wav')
-        meta = { out_path.split('.')[0]: x['meta'] }
-        
-        with open(f'{out_dir}/metadata.yaml', 'a') as f:
-            yaml.dump(meta, f)
-    '''
+    spectrograms, labels = AudioSampler.sample_spectrogram(5, True)
