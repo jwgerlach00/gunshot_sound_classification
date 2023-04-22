@@ -1,7 +1,7 @@
 from pydub import AudioSegment
 # from pydub.playback import play
 import random
-from typing import Dict, Union, Optional
+from typing import Dict, Union, Optional, Tuple
 import os
 import yaml
 import numpy as np
@@ -164,7 +164,7 @@ class AudioSampler:
         return np.array(out)
     
     @staticmethod
-    def sample_spectrogram(n:int, convert_to_mono:bool=True, show_plot:bool=False) -> tuple:
+    def sample_spectrogram(n:int, convert_to_mono:bool=True, show_plot:bool=False) -> Tuple[np.ndarray, np.ndarray]:
         '''
         Generates a random spectrogram and its corresponding y bit-vector (n) times. Randomly chooses an environment
         and overlay file from paths specified within the classmethods.
@@ -205,7 +205,10 @@ class AudioSampler:
         return spectrograms, labels
     
     @staticmethod
-    def generate_dataset(n:int):
+    def generate_dataset(n:int) -> Tuple[np.ndarray, np.ndarray]:
+        '''
+        Creates a dataset formatted for TensorFlow LSTM input.
+        '''
         spectrograms, labels = AudioSampler.sample_spectrogram(n, convert_to_mono=True, show_plot=False)
         spectrograms = np.array([x.T for x in spectrograms])
         labels = np.array(labels)
