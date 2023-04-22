@@ -203,6 +203,13 @@ class AudioSampler:
                 plt.show()
 
         return spectrograms, labels
+    
+    @staticmethod
+    def generate_dataset(n:int):
+        spectrograms, labels = AudioSampler.sample_spectrogram(n, convert_to_mono=True, show_plot=False)
+        spectrograms = np.array([x.T for x in spectrograms])
+        labels = np.array(labels)
+        return spectrograms, labels
                     
             
     def sample_array(self, n:int, window_size:int, convert_to_mono:bool,output_spectrogram=False) -> Dict[str, Union[np.ndarray, int, dict]]:
