@@ -9,8 +9,14 @@ class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
         super(LSTMModel, self).__init__()
         self.lstm = nn.LSTM(X_shape[2], hidden_size=256, batch_first=True)
-        self.fc1 = nn.Linear(256, 128)
-        self.fc2 = nn.Linear(128, X_shape[1])
+        self.fc1 = nn.Linear(256, 2048)
+        self.fc2 = nn.Linear(2048, 2048)
+        self.fc3 = nn.Linear(2048, 2048)
+        self.fc4 = nn.Linear(2048, 2048)
+        self.fc5 = nn.Linear(2048, 256)
+        self.fc6 = nn.Linear(256, 128)
+        self.fc7 = nn.Linear(128, X_shape[1])
+        
         
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
@@ -18,9 +24,13 @@ class LSTMModel(nn.Module):
     def forward(self, x):
         _, (h, _) = self.lstm(x)
         h = h.squeeze(0)
-        x = self.fc1(h)
-        x = self.relu(x)
-        x = self.fc2(x)
+        x = self.relu(self.fc1(h))
+        x = self.relu(self.fc2(x))
+        x = self.relu(self.fc3(x))
+        x = self.relu(self.fc4(x))
+        x = self.relu(self.fc5(x))
+        x = self.relu(self.fc6(x))
+        x = self.fc7(x)
         x = self.sigmoid(x)
         return x
 
@@ -48,7 +58,8 @@ def zeros_and_ones(t):
     return (total-ones)/total*100,ones/total*100
 
 if __name__ == '__main__':
-    print('CUDA' if torch.cuda.is_available() else 'CPU')import torch
+    print('CUDA' if torch.cuda.is_available() else 'CPU')
+import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
