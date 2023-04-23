@@ -8,56 +8,6 @@ from typing import Tuple
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
         super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(X_shape[2], hidden_size=256, batch_first=True)
-        self.fc1 = nn.Linear(256, 128)
-        self.fc2 = nn.Linear(128, X_shape[1])
-        
-        self.relu = nn.ReLU()
-        self.sigmoid = nn.Sigmoid()
-        
-    def forward(self, x):
-        _, (h, _) = self.lstm(x)
-        h = h.squeeze(0)
-        x = self.fc1(h)
-        x = self.relu(x)
-        x = self.fc2(x)
-        x = self.sigmoid(x)
-        return x
-
-
-class LSTMDataset(Dataset):
-    def __init__(self, X:np.ndarray, y:np.ndarray):
-        self.X = X.copy()
-        self.y = y.copy()
-    
-    def __len__(self):
-        return self.X.shape[0]
-    
-    def __getitem__(self, idx:int):
-        return (
-            torch.tensor(self.X[idx]),
-            torch.tensor(self.y[idx]).to(torch.float32)
-        )
-        
-def calc_acc(y, y_p):
-    return torch.sum((y_p > 0.5).int() == y) / (y.shape[0] * y.shape[1])
-
-def zeros_and_ones(t):
-    ones = torch.tensor((t*2),dtype=torch.long).sum().detach().item()
-    total = len(t.detach().numpy())
-    return (total-ones)/total*100,ones/total*100
-
-if __name__ == '__main__':
-    print('CUDA' if torch.cuda.is_available() else 'CPU')import torch
-from torch import nn
-from torch.utils.data import Dataset, DataLoader
-import numpy as np
-from typing import Tuple
-
-
-class LSTMModel(nn.Module):
-    def __init__(self, X_shape:Tuple[int, int, int]):
-        super(LSTMModel, self).__init__()
         self.lstm = nn.LSTM(X_shape[2], hidden_size=512, batch_first=True)
         # self.fc1 = nn.Linear(512, 512)
         self.fc2 = nn.Linear(512, X_shape[1])
