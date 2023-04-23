@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     
     batch_dataloader = DataLoader(Dataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=False)
