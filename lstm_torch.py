@@ -159,7 +159,8 @@ if __name__ == '__main__':
             y_p = model(X)
             loss = criterion(y_p, y)
             print(zeros_and_ones(y_p[0]),"%")
-            print(calc_acc(y_p, y))
+            print("Accuracy",calc_acc(y, y_p).item())
+            print("Loss",loss.item())
             
             optimizer.zero_grad()
             loss.backward()
