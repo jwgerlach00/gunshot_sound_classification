@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torchvision
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from typing import Tuple
@@ -7,37 +8,21 @@ import joblib
 from matplotlib import pyplot as plt
 
 
-class LSTMModel(nn.Module):
-    def __init__(self, X_shape:Tuple[int, int, int]):
-        super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(X_shape[2], hidden_size =128,num_layers =1,dropout =0.2,bidirectional =True,batch_first=True)
-        self.fc1 = nn.Linear(128, 2048)
-        self.fc2 = nn.Linear(2048, 2048)
-        self.fc3 = nn.Linear(2048, 2048)
-        self.fc4 = nn.Linear(2048, 2048)
-        self.fc5 = nn.Linear(2048, 256)
-        self.fc6 = nn.Linear(256, 128)
-        self.fc7 = nn.Linear(128, X_shape[1])
-        
-        
-        self.relu = nn.ReLU()
-        self.sigmoid = nn.Sigmoid()
+class ResNetModel(nn.Module):
+    def __init__(self, hyperparams:dict):
+        super(ResNetModel, self).__init__()
+        self.input = nn.Linear(1000, 512)
+        self.relu = nn.ReLU() # Activation function
+        self.hidden_layer = nn.Linear(512, 984)
+        self.output = nn.Sigmoid()
+        self.rn = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
         
     def forward(self, x):
-        _, (h, _) = self.lstm(x)
-        h = h.squeeze(0)
-        x = self.relu(self.fc1(h))
-        x = self.relu(self.fc2(x))
-        x = self.relu(self.fc3(x))
-        x = self.relu(self.fc4(x))
-        x = self.relu(self.fc5(x))
-        x = self.relu(self.fc6(x))
-        x = self.fc7(x)
-        x = self.sigmoid(x)
-        return x[0]
+        x = x.reshape((1,3,984,43))
+        x = self.relu(self.input(self.rn(x)))
+        return self.output(self.hidden_layer(x))
 
-
-class LSTMDataset(Dataset):
+class Dataset(Dataset):
     def __init__(self, X:np.ndarray, y:np.ndarray):
         self.X = X.copy()
         self.y = y.copy()
@@ -89,16 +74,16 @@ if __name__ == '__main__':
     assert X_train.shape[0] + X_val.shape[0] == X.shape[0]
     assert y_train.shape[0] + y_val.shape[0] == y.shape[0]
 
-    model = LSTMModel(X_train.shape)
+    model = ResNetModel(X_train.shape)
 
     EPOCHS = 100
-    BATCH_SIZE = 64
+    BATCH_SIZE = 1
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     
-    batch_dataloader = DataLoader(LSTMDataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=False)
-    val_dataloader = DataLoader(LSTMDataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
+    batch_dataloader = DataLoader(Dataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=False)
+    val_dataloader = DataLoader(Dataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
     
     best_validation_loss = 1
     for epoch in range(EPOCHS):
@@ -111,8 +96,8 @@ if __name__ == '__main__':
             
             y_p = model(X)
             loss = criterion(y_p, y)
-            print("\n",zeros_and_ones(y_p[0]),"%")
-            print("Accuracy",calc_acc(y, y_p).item())
+            # print("\n",zeros_and_ones(y_p[0]),"%")
+            # print("Accuracy",calc_acc(y, y_p).item())
             print("Loss",loss.item())
             
             optimizer.zero_grad()
