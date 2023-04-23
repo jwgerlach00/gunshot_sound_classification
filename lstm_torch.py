@@ -8,6 +8,7 @@ from typing import Tuple
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
         super(LSTMModel, self).__init__()
+<<<<<<< HEAD
         self.lstm = nn.LSTM(X_shape[2], hidden_size=256, batch_first=True)
         self.fc1 = nn.Linear(256, 2048)
         self.fc2 = nn.Linear(2048, 2048)
@@ -17,6 +18,12 @@ class LSTMModel(nn.Module):
         self.fc6 = nn.Linear(256, 128)
         self.fc7 = nn.Linear(128, X_shape[1])
         
+=======
+        self.lstm = nn.LSTM(X_shape[2], hidden_size=1024, batch_first=True)
+        self.fc1 = nn.Linear(1024, 512)
+        self.fc2 = nn.Linear(512, 512)
+        self.fc3 = nn.Linear(512, X_shape[1])
+>>>>>>> dc0b9b22d5e3f6af66a855b2c79d7306b560569e
         
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
@@ -24,6 +31,7 @@ class LSTMModel(nn.Module):
     def forward(self, x):
         _, (h, _) = self.lstm(x)
         h = h.squeeze(0)
+<<<<<<< HEAD
         x = self.relu(self.fc1(h))
         x = self.relu(self.fc2(x))
         x = self.relu(self.fc3(x))
@@ -82,6 +90,15 @@ class LSTMModel(nn.Module):
         # x = self.fc1(h)
         # x = self.relu(x)
         x = self.fc2(h)
+=======
+        x = self.relu(
+            self.fc1(h)
+        )
+        x = self.relu(
+            self.fc2(x)
+        )
+        x = self.fc3(x)
+>>>>>>> dc0b9b22d5e3f6af66a855b2c79d7306b560569e
         x = self.sigmoid(x)
         return x
 
@@ -159,7 +176,7 @@ if __name__ == '__main__':
             y_p = model(X)
             loss = criterion(y_p, y)
             print(zeros_and_ones(y_p[0]),"%")
-            print(calc_acc(y, y_p))
+            print(calc_acc(y_p, y))
             
             optimizer.zero_grad()
             loss.backward()
@@ -179,55 +196,3 @@ if __name__ == '__main__':
                 val_loss_history.append(loss.item())
                 
         print(f'Val Loss: {np.mean(val_loss_history)}')
-            
-            
-
-    # Load X and y
-    X = np.load('dataset/spectrograms.npy')
-    y = np.load('dataset/labels.npy')
-    # Assert that X and y have the same number of samples
-    assert X.shape[0] == y.shape[0]
-
-    # Define train/val split
-    num_samples = X.shape[0]
-    train_ratio = .8
-    split_index = int(num_samples*train_ratio)
-
-    # Split X and y
-    X_train = X[:split_index]
-    X_val = X[split_index:]
-    y_train = y[:split_index]
-    y_val = y[split_index:]
-    # Assert that no samples are lost
-    assert X_train.shape[0] + X_val.shape[0] == X.shape[0]
-    assert y_train.shape[0] + y_val.shape[0] == y.shape[0]
-
-    model = LSTMModel(X_train.shape)
-
-    EPOCHS = 10
-    BATCH_SIZE = 10
-    criterion = nn.BCELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-    
-    for epoch in range(EPOCHS):
-        print(f'Epoch {epoch+1}/{EPOCHS}')
-        batch_dataloader = DataLoader(LSTMDataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=False)
-        
-        model.train()
-        lost_history = []
-        for X, y in batch_dataloader:
-            
-            y_p = model(X)
-            loss = criterion(y_p, y)
-            print(zeros_and_ones(y_p[0]),"%")
-            print(calc_acc(y, y_p))
-            
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            
-            lost_history.append(loss.item())
-            
-        print(f'Loss: {np.mean(lost_history)}')
-            
-            
