@@ -42,6 +42,11 @@ class LSTMDataset(Dataset):
 def calc_acc(y, y_p):
     return torch.sum((y_p > 0.5).int() == y) / (y.shape[0] * y.shape[1])
 
+def zeros_and_ones(t):
+    ones = torch.tensor((t*2),dtype=torch.long).sum().detach().item()
+    total = len(t.detach().numpy())
+    return (total-ones)/total*100,ones/total*100
+
 if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
 
@@ -82,6 +87,8 @@ if __name__ == '__main__':
             
             y_p = model(X)
             loss = criterion(y_p, y)
+            print(zeros_and_ones(y_p[0]),"%")
+            print(calc_acc(y, y_p))
             
             optimizer.zero_grad()
             loss.backward()
