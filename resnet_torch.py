@@ -6,6 +6,20 @@ import numpy as np
 from typing import Tuple
 import joblib
 from matplotlib import pyplot as plt
+from sklearn.metrics import f1_score
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+
+def plot_cm(y_true, y_pred):
+    cm = confusion_matrix(y_true, y_pred)
+    fig, ax = plt.subplots(figsize=(18, 16)) 
+    ax = sns.heatmap(
+        cm, 
+        annot=True, 
+        fmt="d", 
+        cmap=sns.diverging_palette(220, 20, n=7),
+        ax=ax
+    )
 
 
 class ResNetModel(nn.Module):
@@ -76,10 +90,11 @@ if __name__ == '__main__':
     assert X_train.shape[0] + X_val.shape[0] == X.shape[0]
     assert y_train.shape[0] + y_val.shape[0] == y.shape[0]
 
-    EPOCHS = 100
+    EPOCHS = 1
     BATCH_SIZE = 10
     model = ResNetModel(X_train.shape,BATCH_SIZE)
 
+    model  = joblib.load('lstm_torch_train0.15485312044620514_val0.1472010463476181.joblib') 
     
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()
@@ -99,16 +114,17 @@ if __name__ == '__main__':
             
             y_p = model(X)
             loss = criterion(y_p, y)
-            print("\n",zeros_and_ones(y_p[0]),"%")
-            print("Accuracy",calc_acc(y, y_p).item())
-            print("Loss",loss.item())
-            
+        
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
             train_loss_history.append(loss.item())
-            
+        print("\n",zeros_and_ones(y_p[0]),"%")
+        print("Accuracy",calc_acc(y, y_p).item())
+        print("Loss",loss.item())
+        print("Training f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
+                 
         print(f'Train Loss: {np.mean(train_loss_history)}')
         print(class_counts((y_p > 0.5).int()))
         
@@ -119,7 +135,10 @@ if __name__ == '__main__':
                 y_p = model(X)
                 loss = criterion(y_p, y)
                 val_loss_history.append(loss.item())
-               
+        print("\nAccuracy",calc_acc(y, y_p).item())
+        print("Loss",loss.item())
+        print("Validation f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        plot_cm(y.flatten().detach(), y_p.flatten().detach().round())
         print(f'Val Loss: {np.mean(val_loss_history)}')
         if np.mean(val_loss_history) < best_validation_loss:
             best_validation_loss = np.mean(val_loss_history)
@@ -134,3 +153,5 @@ if __name__ == '__main__':
     plt.ylabel('Loss')
     plt.legend()
     plt.show()
+
+    
