@@ -8,7 +8,6 @@ from typing import Tuple
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
         super(LSTMModel, self).__init__()
-<<<<<<< HEAD
         self.lstm = nn.LSTM(X_shape[2], hidden_size=256, batch_first=True)
         self.fc1 = nn.Linear(256, 2048)
         self.fc2 = nn.Linear(2048, 2048)
@@ -18,12 +17,6 @@ class LSTMModel(nn.Module):
         self.fc6 = nn.Linear(256, 128)
         self.fc7 = nn.Linear(128, X_shape[1])
         
-=======
-        self.lstm = nn.LSTM(X_shape[2], hidden_size=1024, batch_first=True)
-        self.fc1 = nn.Linear(1024, 512)
-        self.fc2 = nn.Linear(512, 512)
-        self.fc3 = nn.Linear(512, X_shape[1])
->>>>>>> dc0b9b22d5e3f6af66a855b2c79d7306b560569e
         
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
@@ -31,7 +24,6 @@ class LSTMModel(nn.Module):
     def forward(self, x):
         _, (h, _) = self.lstm(x)
         h = h.squeeze(0)
-<<<<<<< HEAD
         x = self.relu(self.fc1(h))
         x = self.relu(self.fc2(x))
         x = self.relu(self.fc3(x))
@@ -90,15 +82,6 @@ class LSTMModel(nn.Module):
         # x = self.fc1(h)
         # x = self.relu(x)
         x = self.fc2(h)
-=======
-        x = self.relu(
-            self.fc1(h)
-        )
-        x = self.relu(
-            self.fc2(x)
-        )
-        x = self.fc3(x)
->>>>>>> dc0b9b22d5e3f6af66a855b2c79d7306b560569e
         x = self.sigmoid(x)
         return x
 
