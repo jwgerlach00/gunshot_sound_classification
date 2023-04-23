@@ -8,8 +8,8 @@ from typing import Tuple
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
         super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(X_shape[2], hidden_size=256, batch_first=True)
-        self.fc1 = nn.Linear(256, 2048)
+        self.lstm = nn.LSTM(X_shape[2], hidden_size=4096, batch_first=True)
+        self.fc1 = nn.Linear(4096, 2048)
         self.fc2 = nn.Linear(2048, 2048)
         self.fc3 = nn.Linear(2048, 2048)
         self.fc4 = nn.Linear(2048, 2048)
@@ -56,9 +56,6 @@ def zeros_and_ones(t):
     ones = torch.tensor((t*2),dtype=torch.long).sum().detach().item()
     total = len(t.detach().numpy())
     return (total-ones)/total*100,ones/total*100
-        
-def calc_acc(y_p, y):
-    return torch.sum((y_p > 0.5).int() == y) / (y.shape[0] * y.shape[1])
 
 def class_counts(y):
     return [torch.sum(y == 0), torch.sum(y == 1)]
@@ -66,11 +63,6 @@ def class_counts(y):
 def distribution(y):
     frac_ones = np.sum(y) / (y.shape[0] * y.shape[1])
     return torch.tensor([frac_ones, 1 - frac_ones])
-
-def zeros_and_ones(t):
-    ones = torch.tensor((t*2),dtype=torch.long).sum().detach().item()
-    total = len(t.detach().numpy())
-    return (total-ones)/total*100,ones/total*100
 
 if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
@@ -100,23 +92,24 @@ if __name__ == '__main__':
     EPOCHS = 1000
     BATCH_SIZE = 10
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
-    criterion = nn.BCELoss()
+    criterion = nn.BCELoss(weight=torch.tensor((1000)),reduction='sum')
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     
     batch_dataloader = DataLoader(LSTMDataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=False)
     val_dataloader = DataLoader(LSTMDataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
     
     for epoch in range(EPOCHS):
+        print()
         print(f'Epoch {epoch+1}/{EPOCHS}')
-        
+
         model.train()
         train_loss_history = []
         for X, y in batch_dataloader:
             
             y_p = model(X)
             loss = criterion(y_p, y)
-            print(zeros_and_ones(y_p[0]),"%")
-            print("Accuracy",calc_acc(y_p, y).item())
+            print("\n",zeros_and_ones(y_p[0]),"%")
+            print("Accuracy",calc_acc(y, y_p).item())
             print("Loss",loss.item())
             
             optimizer.zero_grad()
