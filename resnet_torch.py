@@ -9,16 +9,18 @@ from matplotlib import pyplot as plt
 
 
 class ResNetModel(nn.Module):
-    def __init__(self, hyperparams:dict):
+    def __init__(self,x_shape, BATCH_SIZE):
         super(ResNetModel, self).__init__()
+        self.batch = BATCH_SIZE
         self.input = nn.Linear(1000, 512)
         self.relu = nn.ReLU() # Activation function
-        self.hidden_layer = nn.Linear(512, 984)
+        self.length = x_shape[-2]
+        self.hidden_layer = nn.Linear(512, x_shape[-2])
         self.output = nn.Sigmoid()
         self.rn = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
         
     def forward(self, x):
-        x = x.reshape((1,3,984,43))
+        x = x.reshape((self.batch,3,self.length,43))
         x = self.relu(self.input(self.rn(x)))
         return self.output(self.hidden_layer(x))
 
@@ -74,10 +76,11 @@ if __name__ == '__main__':
     assert X_train.shape[0] + X_val.shape[0] == X.shape[0]
     assert y_train.shape[0] + y_val.shape[0] == y.shape[0]
 
-    model = ResNetModel(X_train.shape)
-
     EPOCHS = 100
-    BATCH_SIZE = 1
+    BATCH_SIZE = 10
+    model = ResNetModel(X_train.shape,BATCH_SIZE)
+
+    
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
@@ -96,8 +99,8 @@ if __name__ == '__main__':
             
             y_p = model(X)
             loss = criterion(y_p, y)
-            # print("\n",zeros_and_ones(y_p[0]),"%")
-            # print("Accuracy",calc_acc(y, y_p).item())
+            print("\n",zeros_and_ones(y_p[0]),"%")
+            print("Accuracy",calc_acc(y, y_p).item())
             print("Loss",loss.item())
             
             optimizer.zero_grad()
