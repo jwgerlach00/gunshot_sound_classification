@@ -3,13 +3,15 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from typing import Tuple
+import joblib
+from matplotlib import pyplot as plt
 
 
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
         super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(X_shape[2], hidden_size=4096, batch_first=True)
-        self.fc1 = nn.Linear(4096, 2048)
+        self.lstm = nn.LSTM(X_shape[2], hidden_size =128,num_layers =1,dropout =0.2,bidirectional =True,batch_first=True)
+        self.fc1 = nn.Linear(128, 2048)
         self.fc2 = nn.Linear(2048, 2048)
         self.fc3 = nn.Linear(2048, 2048)
         self.fc4 = nn.Linear(2048, 2048)
@@ -32,7 +34,7 @@ class LSTMModel(nn.Module):
         x = self.relu(self.fc6(x))
         x = self.fc7(x)
         x = self.sigmoid(x)
-        return x
+        return x[0]
 
 
 class LSTMDataset(Dataset):
@@ -89,15 +91,16 @@ if __name__ == '__main__':
 
     model = LSTMModel(X_train.shape)
 
-    EPOCHS = 1000
-    BATCH_SIZE = 10
+    EPOCHS = 100
+    BATCH_SIZE = 64
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
-    criterion = nn.BCELoss(weight=torch.tensor((1000)),reduction='sum')
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     
     batch_dataloader = DataLoader(LSTMDataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=False)
     val_dataloader = DataLoader(LSTMDataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
     
+    best_validation_loss = 1
     for epoch in range(EPOCHS):
         print()
         print(f'Epoch {epoch+1}/{EPOCHS}')
@@ -128,5 +131,18 @@ if __name__ == '__main__':
                 y_p = model(X)
                 loss = criterion(y_p, y)
                 val_loss_history.append(loss.item())
-                
+               
         print(f'Val Loss: {np.mean(val_loss_history)}')
+        if np.mean(val_loss_history) < best_validation_loss:
+            best_validation_loss = np.mean(val_loss_history)
+            joblib.dump(model, f'lstm_torch_train{train_loss_history[-1]}_val{val_loss_history[-1]}.joblib')
+        #training_loop = joblib.load('mlpd.joblib') 
+
+    plt.figure()
+    plt.title('Loss curve')
+    plt.plot(range(len(train_loss_history)), train_loss_history, label='train loss')
+    plt.plot(range(len(val_loss_history)), val_loss_history, label='val loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
