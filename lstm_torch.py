@@ -103,7 +103,7 @@ if __name__ == '__main__':
             y_p = model(X)
             loss = criterion(y_p, y)
             print(zeros_and_ones(y_p[0]),"%")
-            print(calc_acc(y, y_p))
+            print(calc_acc(y_p, y))
             
             optimizer.zero_grad()
             loss.backward()
@@ -123,4 +123,3 @@ if __name__ == '__main__':
                 val_loss_history.append(loss.item())
                 
         print(f'Val Loss: {np.mean(val_loss_history)}')
-            
