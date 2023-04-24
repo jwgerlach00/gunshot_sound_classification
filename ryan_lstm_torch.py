@@ -82,7 +82,7 @@ if __name__ == '__main__':
     # Split X and y
     X_train = X[:1000]
     X_val = X[split_index:]
-    y_train = y[:100]
+    y_train = y[:1000]
     y_val = y[split_index:]
     # Assert that no samples are lost
     # assert X_train.shape[0] + X_val.shape[0] == X.shape[0]
