@@ -1,17 +1,14 @@
 import torch
 from torch import nn
-import torchvision
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from typing import Tuple
 import joblib
 from matplotlib import pyplot as plt
-from sklearn.metrics import f1_score,precision_score,recall_score
-from sklearn.metrics import confusion_matrix
-import seaborn as sns
-import pandas as pd
-import os
 from tqdm import tqdm
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import f1_score,precision_score,recall_score
+import seaborn as sns
 
 def plot_cm(y_true, y_pred):
     cm = confusion_matrix(y_true, y_pred)
@@ -27,7 +24,7 @@ def plot_cm(y_true, y_pred):
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
         super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(X_shape[2], hidden_size=256, num_layers=1, dropout=0.2, bidirectional=True,
+        self.lstm = nn.LSTM(X_shape[1], hidden_size=256, num_layers=1, dropout=0.2, bidirectional=True,
                             batch_first=True)
         self.fc1 = nn.Linear(512, 128)
         self.fc2 = nn.Linear(128, 1)
@@ -41,7 +38,7 @@ class LSTMModel(nn.Module):
         x = self.relu(self.fc1(h))
         x = self.fc2(x)
         x = self.sigmoid(x)
-        return x
+        return x.flatten()
 
 
 class LSTMDataset(Dataset):
@@ -60,10 +57,20 @@ class LSTMDataset(Dataset):
             torch.tensor(self.X[idx:idx+self.window_size, :]),
             torch.tensor(self.y[idx+self.window_size]).to(torch.float32)
         )
-
+        
+def plot_cm(y_true, y_pred):
+    cm = confusion_matrix(y_true, y_pred)
+    fig, ax = plt.subplots(figsize=(18, 16)) 
+    ax = sns.heatmap(
+        cm, 
+        annot=True, 
+        fmt="d", 
+        cmap=sns.diverging_palette(220, 20, n=7),
+        ax=ax
+    )
 
 def calc_acc(y, y_p):
-    return torch.sum((y_p > 0.5).int() == y) / (y.shape[0] * y.shape[1])
+    return torch.sum((y_p > 0.5).int() == y) / (y.shape[0])
 
 def zeros_and_ones(t):
     ones = torch.tensor((t*2),dtype=torch.long).sum().detach().item()
@@ -74,17 +81,17 @@ def class_counts(y):
     return [torch.sum(y == 0), torch.sum(y == 1)]
 
 def distribution(y):
-    frac_ones = np.sum(y) / (y.shape[0] * y.shape[1])
+    frac_ones = np.sum(y) / (y.shape[0])
     return torch.tensor([frac_ones, 1 - frac_ones])
 
 if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
 
     # Load X and y
-    X = np.load('dataset/TrainDataNpz/spectrograms.npz')
-    y = np.load('dataset/TrainDataNpz/labels.npz')
-    X = np.array(X['a']).reshape((10000,56,2049))
-    y = np.array(y['a']).reshape((10000,56))
+    X = np.load('dataset/spectrograms.npz')['a']
+    y = np.load('dataset/labels.npz')['a']
+    # X = np.array(X['a']).reshape((10000,56,2049))
+    # y = np.array(y['a']).reshape((10000,56))
     # Assert that X and y have the same number of samples
     assert X.shape[0] == y.shape[0]
 
@@ -105,7 +112,7 @@ if __name__ == '__main__':
     model = LSTMModel(X_train.shape)
 
     EPOCHS = 5
-    BATCH_SIZE = 10
+    BATCH_SIZE = 32
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -114,18 +121,13 @@ if __name__ == '__main__':
     val_dataloader = DataLoader(LSTMDataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
     
     best_validation_loss = 1
-    train_loss_history = []
-    train_acc_history = []
-    val_loss_history = []
-    val_acc_history = []
-    
     for epoch in range(EPOCHS):
         print()
         print(f'Epoch {epoch+1}/{EPOCHS}')
 
         model.train()
-        
-        for X, y in batch_dataloader:
+        train_loss_history = []
+        for X, y in tqdm(batch_dataloader):
             
             y_p = model(X)
             loss = criterion(y_p, y)
@@ -135,8 +137,7 @@ if __name__ == '__main__':
             optimizer.step()
             
         train_loss_history.append(loss.item())
-        train_acc_history.append(calc_acc(y, y_p).item())
-        print("\n",zeros_and_ones(y_p[0]),"%")
+        # print("\n",zeros_and_ones(y_p),"%")
         print("Accuracy",calc_acc(y, y_p).item())
         print("Loss",loss.item())
         print("Training Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
@@ -147,27 +148,26 @@ if __name__ == '__main__':
         print(class_counts((y_p > 0.5).int()))
         
         model.eval()
-        
-        for X, y in val_dataloader:
+        val_loss_history = []
+        for X, y in tqdm(val_dataloader):
             with torch.no_grad():
                 y_p = model(X)
                 loss = criterion(y_p, y)
         val_loss_history.append(loss.item())
-        val_acc_history.append(calc_acc(y, y_p).item())
         print("\nAccuracy",calc_acc(y, y_p).item())
         print("Loss",loss.item())
         print("Validation Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
         print("Validation Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
         print("Validation f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
 
-        
+        plot_cm(y.flatten().detach(), y_p.flatten().detach().round())
 
         print(f'Val Loss: {np.mean(val_loss_history)}')
         if np.mean(val_loss_history) < best_validation_loss:
             best_validation_loss = np.mean(val_loss_history)
             joblib.dump(model, f'lstm_torch_train{train_loss_history[-1]}_val{val_loss_history[-1]}.joblib')
         #training_loop = joblib.load('mlpd.joblib') 
-    plot_cm(y.flatten().detach(), y_p.flatten().detach().round())
+
     plt.figure()
     plt.title('Loss curve')
     plt.plot(range(len(train_loss_history)), train_loss_history, label='train loss')
@@ -176,5 +176,3 @@ if __name__ == '__main__':
     plt.ylabel('Loss')
     plt.legend()
     plt.show()
-
-    
