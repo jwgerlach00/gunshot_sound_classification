@@ -11,9 +11,9 @@ from tqdm import tqdm
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
         super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(X_shape[2], hidden_size=256, num_layers=1, dropout=0.2, bidirectional=False,
+        self.lstm = nn.LSTM(X_shape[2], hidden_size=256, num_layers=1, dropout=0.2, bidirectional=True,
                             batch_first=True)
-        self.fc1 = nn.Linear(256, 128)
+        self.fc1 = nn.Linear(512, 128)
         self.fc2 = nn.Linear(128, 1)
         
         self.relu = nn.ReLU()
@@ -21,7 +21,7 @@ class LSTMModel(nn.Module):
         
     def forward(self, x):
         _, (h, _) = self.lstm(x)
-        h = h.squeeze(0)
+        h = h.view(h.shape[1], -1)
         x = self.relu(self.fc1(h))
         x = self.fc2(x)
         x = self.sigmoid(x)
@@ -33,7 +33,6 @@ class LSTMDataset(Dataset):
         self.window_size = window_size
         self.X = np.reshape(X.copy(), (-1, X.shape[-1]))
         self.y = np.reshape(y.copy(), (-1, 1))
-        # self.y = y.copy()
     
     def __len__(self):
         return self.X.shape[0] - self.window_size
@@ -43,7 +42,8 @@ class LSTMDataset(Dataset):
             torch.tensor(self.X[idx:idx+self.window_size, :]),
             torch.tensor(self.y[idx+self.window_size]).to(torch.float32)
         )
-        
+
+
 def calc_acc(y, y_p):
     return torch.sum((y_p > 0.5).int() == y) / (y.shape[0] * y.shape[1])
 
