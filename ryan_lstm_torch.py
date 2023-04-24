@@ -9,17 +9,8 @@ from tqdm import tqdm
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import f1_score,precision_score,recall_score
 import seaborn as sns
+from pprint import pprint
 
-def plot_cm(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred)
-    fig, ax = plt.subplots(figsize=(18, 16)) 
-    ax = sns.heatmap(
-        cm, 
-        annot=True, 
-        fmt="d", 
-        cmap=sns.diverging_palette(220, 20, n=7),
-        ax=ax
-    )
 
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
@@ -121,12 +112,31 @@ if __name__ == '__main__':
     val_dataloader = DataLoader(LSTMDataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
     
     best_validation_loss = 1
+    
+    def history():
+        return {
+            'train': {
+                'loss': [],
+                'acc': [],
+                'f1': [],
+                'precision': [],
+                'recall': []
+            },
+            'val': {
+                'loss': [],
+                'acc': [],
+                'f1': [],
+                'precision': [],
+                'recall': []
+            }
+        }
+    
+    epoch_history = history()
     for epoch in range(EPOCHS):
-        print()
         print(f'Epoch {epoch+1}/{EPOCHS}')
+        batch_history = history()
 
         model.train()
-        train_loss_history = []
         for X, y in tqdm(batch_dataloader):
             
             y_p = model(X)
@@ -136,42 +146,50 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
             
-        train_loss_history.append(loss.item())
-        # print("\n",zeros_and_ones(y_p),"%")
-        print("Accuracy",calc_acc(y, y_p).item())
-        print("Loss",loss.item())
-        print("Training Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
-        print("Training Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
-        print("Training f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
-                 
-        print(f'Train Loss: {np.mean(train_loss_history)}')
-        print(class_counts((y_p > 0.5).int()))
+            batch_history['train']['loss'].append(loss.item())
+            batch_history['train']['acc'].append(calc_acc(y, y_p).item())
+            batch_history['train']['f1'].append(f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
+            batch_history['train']['precision'].append(
+                precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
+            batch_history['train']['recall'].append(recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
+            
+        epoch_history['train']['loss'].append(np.mean(batch_history['train']['loss']))
+        epoch_history['train']['acc'].append(np.mean(batch_history['train']['acc']))
+        epoch_history['train']['f1'].append(np.mean(batch_history['train']['f1']))
+        epoch_history['train']['precision'].append(np.mean(batch_history['train']['precision']))
+        epoch_history['train']['recall'].append(np.mean(batch_history['train']['recall']))
+
         
         model.eval()
-        val_loss_history = []
         for X, y in tqdm(val_dataloader):
             with torch.no_grad():
                 y_p = model(X)
                 loss = criterion(y_p, y)
-        val_loss_history.append(loss.item())
-        print("\nAccuracy",calc_acc(y, y_p).item())
-        print("Loss",loss.item())
-        print("Validation Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
-        print("Validation Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
-        print("Validation f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
-
+                
+            batch_history['val']['loss'].append(loss.item())
+            batch_history['val']['acc'].append(calc_acc(y, y_p).item())
+            batch_history['val']['f1'].append(f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
+            batch_history['val']['precision'].append(
+                precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
+            batch_history['val']['recall'].append(recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
+            
+        epoch_history['val']['loss'].append(np.mean(batch_history['val']['loss']))
+        epoch_history['val']['acc'].append(np.mean(batch_history['val']['acc']))
+        epoch_history['val']['f1'].append(np.mean(batch_history['val']['f1']))
+        epoch_history['val']['precision'].append(np.mean(batch_history['val']['precision']))
+        epoch_history['val']['recall'].append(np.mean(batch_history['val']['recall']))
+        
+        pprint(epoch_history)
         plot_cm(y.flatten().detach(), y_p.flatten().detach().round())
 
-        print(f'Val Loss: {np.mean(val_loss_history)}')
-        if np.mean(val_loss_history) < best_validation_loss:
-            best_validation_loss = np.mean(val_loss_history)
-            joblib.dump(model, f'lstm_torch_train{train_loss_history[-1]}_val{val_loss_history[-1]}.joblib')
-        #training_loop = joblib.load('mlpd.joblib') 
+        if np.mean(epoch_history['val']['loss']) < best_validation_loss:
+            best_validation_loss = np.mean(epoch_history['val']['loss'])
+            joblib.dump(model, f'lstm_torch_train.joblib')
 
     plt.figure()
     plt.title('Loss curve')
-    plt.plot(range(len(train_loss_history)), train_loss_history, label='train loss')
-    plt.plot(range(len(val_loss_history)), val_loss_history, label='val loss')
+    plt.plot(range(len(epoch_history['train']['loss'])), epoch_history['train']['loss'], label='train loss')
+    plt.plot(range(len(epoch_history['val']['loss'])), epoch_history['val']['loss'], label='val loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
