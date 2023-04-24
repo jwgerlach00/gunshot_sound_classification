@@ -88,8 +88,8 @@ if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
 
     # Load X and y
-    X = np.load('dataset/spectrograms.npz')['a']
-    y = np.load('dataset/labels.npz')['a']
+    X = np.load('dataset/TrainDataNpz/spectrograms.npz')['a']
+    y = np.load('dataset/TrainDataNpz/labels.npz')['a']
     # X = np.array(X['a']).reshape((10000,56,2049))
     # y = np.array(y['a']).reshape((10000,56))
     # Assert that X and y have the same number of samples
