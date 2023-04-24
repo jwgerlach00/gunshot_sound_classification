@@ -6,9 +6,11 @@ import numpy as np
 from typing import Tuple
 import joblib
 from matplotlib import pyplot as plt
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score,precision_score,recall_score
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
+import pandas as pd
+import os
 
 def plot_cm(y_true, y_pred):
     cm = confusion_matrix(y_true, y_pred)
@@ -28,13 +30,13 @@ class ResNetModel(nn.Module):
         self.batch = BATCH_SIZE
         self.input = nn.Linear(1000, 512)
         self.relu = nn.ReLU() # Activation function
-        self.length = x_shape[-2]
-        self.hidden_layer = nn.Linear(512, x_shape[-2])
+        self.length = x_shape
+        self.hidden_layer = nn.Linear(512, x_shape)
         self.output = nn.Sigmoid()
         self.rn = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
         
     def forward(self, x):
-        x = x.reshape((self.batch,3,self.length,43))
+        x = x.reshape((self.batch,3,self.length,683)) # x = x.reshape((self.batch,3,self.length,43))
         x = self.relu(self.input(self.rn(x)))
         return self.output(self.hidden_layer(x))
 
@@ -70,9 +72,19 @@ def distribution(y):
 if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
 
-    # Load X and y
-    X = np.load('dataset/spectrograms.npy')
-    y = np.load('dataset/labels.npy')
+    if True:
+        X = np.load('dataset/TrainDataNpz/spectrograms.npz')
+        y = np.load('dataset/TrainDataNpz/labels.npz')
+
+        X = np.array(X['a']).reshape((10000,56,2049))
+        y = np.array(y['a']).reshape((10000,56))
+        
+        
+    else:
+        #load jacobs 1000 dataset
+        # Load X and y
+        X = np.load('dataset/spectrograms.npy')
+        y = np.load('dataset/labels.npy')
     # Assert that X and y have the same number of samples
     assert X.shape[0] == y.shape[0]
 
@@ -92,9 +104,12 @@ if __name__ == '__main__':
 
     EPOCHS = 1
     BATCH_SIZE = 10
-    model = ResNetModel(X_train.shape,BATCH_SIZE)
+    model = ResNetModel(56,BATCH_SIZE) #(10,3,68,10)
 
-    model  = joblib.load('lstm_torch_train0.15485312044620514_val0.1472010463476181.joblib') 
+    #make false to train from new model
+    if False:
+        model  = joblib.load('lstm_torch_train0.15485312044620514_val0.1472010463476181.joblib') 
+        EPOCHS = 1
     
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()
@@ -119,10 +134,12 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
             
-            train_loss_history.append(loss.item())
+        train_loss_history.append(loss.item())
         print("\n",zeros_and_ones(y_p[0]),"%")
         print("Accuracy",calc_acc(y, y_p).item())
         print("Loss",loss.item())
+        print("Training Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Training Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
         print("Training f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
                  
         print(f'Train Loss: {np.mean(train_loss_history)}')
@@ -134,11 +151,15 @@ if __name__ == '__main__':
             with torch.no_grad():
                 y_p = model(X)
                 loss = criterion(y_p, y)
-                val_loss_history.append(loss.item())
+        val_loss_history.append(loss.item())
         print("\nAccuracy",calc_acc(y, y_p).item())
         print("Loss",loss.item())
+        print("Validation Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Validation Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
         print("Validation f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
+
         plot_cm(y.flatten().detach(), y_p.flatten().detach().round())
+
         print(f'Val Loss: {np.mean(val_loss_history)}')
         if np.mean(val_loss_history) < best_validation_loss:
             best_validation_loss = np.mean(val_loss_history)
