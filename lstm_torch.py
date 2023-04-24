@@ -1,12 +1,16 @@
 import torch
 from torch import nn
+import torchvision
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from typing import Tuple
 import joblib
 from matplotlib import pyplot as plt
-from tqdm import tqdm
-
+from sklearn.metrics import f1_score,precision_score,recall_score
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import pandas as pd
+import os
 
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
@@ -59,18 +63,29 @@ def distribution(y):
     frac_ones = np.sum(y) / (y.shape[0] * y.shape[1])
     return torch.tensor([frac_ones, 1 - frac_ones])
 
+
 if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
 
-    # Load X and y
-    X = np.load('dataset/spectrograms.npy')
-    y = np.load('dataset/labels.npy')
+    if True:
+        X = np.load('dataset/TrainDataNpz/spectrograms.npz')
+        y = np.load('dataset/TrainDataNpz/labels.npz')
+
+        X = np.array(X['a']).reshape((10000,56,2049))
+        y = np.array(y['a']).reshape((10000,56))
+        
+        
+    else:
+        #load jacobs 1000 dataset
+        # Load X and y
+        X = np.load('dataset/spectrograms.npy')
+        y = np.load('dataset/labels.npy')
     # Assert that X and y have the same number of samples
     assert X.shape[0] == y.shape[0]
 
     # Define train/val split
     num_samples = X.shape[0]
-    train_ratio = .8
+    train_ratio = .2
     split_index = int(num_samples*train_ratio)
 
     # Split X and y
@@ -82,65 +97,72 @@ if __name__ == '__main__':
     assert X_train.shape[0] + X_val.shape[0] == X.shape[0]
     assert y_train.shape[0] + y_val.shape[0] == y.shape[0]
 
+    EPOCHS = 5
+    BATCH_SIZE = 10
     model = LSTMModel(X_train.shape)
-
-    EPOCHS = 100
-    BATCH_SIZE = 32
+    
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     
     batch_dataloader = DataLoader(LSTMDataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=False)
     val_dataloader = DataLoader(LSTMDataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
     
     best_validation_loss = 1
+    train_loss_history = []
+    val_loss_history = []
     for epoch in range(EPOCHS):
         print()
         print(f'Epoch {epoch+1}/{EPOCHS}')
 
         model.train()
-        train_loss_history = []
-        train_acc_history = []
-        for X, y in tqdm(batch_dataloader):
+        
+        for X, y in batch_dataloader:
             
             y_p = model(X)
             loss = criterion(y_p, y)
-            # print("\n",zeros_and_ones(y_p[0]),"%")
-            # print("Accuracy",calc_acc(y, y_p).item())
-            # print("Loss",loss.item())
-            
+        
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            train_loss_history.append(loss.item())
-            train_acc_history.append(calc_acc(y, y_p).item())
-            
+        train_loss_history.append(loss.item())
+        print("\n",zeros_and_ones(y_p[0]),"%")
+        print("Accuracy",calc_acc(y, y_p).item())
+        print("Loss",loss.item())
+        print("Training Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Training Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Training f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
+                 
         print(f'Train Loss: {np.mean(train_loss_history)}')
-        print(f'Train Accuracy: {np.mean(train_acc_history)}')
+        print(class_counts((y_p > 0.5).int()))
         
         model.eval()
-        val_loss_history = []
-        val_acc_history = []
-        for X, y in tqdm(val_dataloader):
+        
+        for X, y in val_dataloader:
             with torch.no_grad():
                 y_p = model(X)
                 loss = criterion(y_p, y)
-                val_loss_history.append(loss.item())
-                val_acc_history.append(calc_acc(y, y_p).item())
-               
-        print(f'Val Loss: {np.mean(val_loss_history)}')
-        print(f'Val Accuracy: {np.mean(val_acc_history)}')
-        # if np.mean(val_loss_history) < best_validation_loss:
-        #     best_validation_loss = np.mean(val_loss_history)
-        #     joblib.dump(model, f'lstm_torch_train{train_loss_history[-1]}_val{val_loss_history[-1]}.joblib')
-        #training_loop = joblib.load('mlpd.joblib') 
+        val_loss_history.append(loss.item())
+        print("\nAccuracy",calc_acc(y, y_p).item())
+        print("Loss",loss.item())
+        print("Validation Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Validation Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Validation f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
 
-    # plt.figure()
-    # plt.title('Loss curve')
-    # plt.plot(range(len(train_loss_history)), train_loss_history, label='train loss')
-    # plt.plot(range(len(val_loss_history)), val_loss_history, label='val loss')
-    # plt.xlabel('Epochs')
-    # plt.ylabel('Loss')
-    # plt.legend()
-    # plt.show()
+        
+
+        print(f'Val Loss: {np.mean(val_loss_history)}')
+        if np.mean(val_loss_history) < best_validation_loss:
+            best_validation_loss = np.mean(val_loss_history)
+            joblib.dump(model, f'lstm_torch_train{train_loss_history[-1]}_val{val_loss_history[-1]}.joblib')
+        #training_loop = joblib.load('mlpd.joblib') 
+    plot_cm(y.flatten().detach(), y_p.flatten().detach().round())
+    plt.figure()
+    plt.title('Loss curve')
+    plt.plot(range(len(train_loss_history)), train_loss_history, label='train loss')
+    plt.plot(range(len(val_loss_history)), val_loss_history, label='val loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()

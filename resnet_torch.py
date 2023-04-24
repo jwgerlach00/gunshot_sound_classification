@@ -102,7 +102,7 @@ if __name__ == '__main__':
     assert X_train.shape[0] + X_val.shape[0] == X.shape[0]
     assert y_train.shape[0] + y_val.shape[0] == y.shape[0]
 
-    EPOCHS = 1
+    EPOCHS = 5
     BATCH_SIZE = 10
     model = ResNetModel(56,BATCH_SIZE) #(10,3,68,10)
 
@@ -119,12 +119,14 @@ if __name__ == '__main__':
     val_dataloader = DataLoader(Dataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
     
     best_validation_loss = 1
+    train_loss_history = []
+    val_loss_history = []
     for epoch in range(EPOCHS):
         print()
         print(f'Epoch {epoch+1}/{EPOCHS}')
 
         model.train()
-        train_loss_history = []
+        
         for X, y in batch_dataloader:
             
             y_p = model(X)
@@ -146,7 +148,7 @@ if __name__ == '__main__':
         print(class_counts((y_p > 0.5).int()))
         
         model.eval()
-        val_loss_history = []
+        
         for X, y in val_dataloader:
             with torch.no_grad():
                 y_p = model(X)
@@ -158,14 +160,14 @@ if __name__ == '__main__':
         print("Validation Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
         print("Validation f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
 
-        plot_cm(y.flatten().detach(), y_p.flatten().detach().round())
+        
 
         print(f'Val Loss: {np.mean(val_loss_history)}')
         if np.mean(val_loss_history) < best_validation_loss:
             best_validation_loss = np.mean(val_loss_history)
             joblib.dump(model, f'lstm_torch_train{train_loss_history[-1]}_val{val_loss_history[-1]}.joblib')
         #training_loop = joblib.load('mlpd.joblib') 
-
+    plot_cm(y.flatten().detach(), y_p.flatten().detach().round())
     plt.figure()
     plt.title('Loss curve')
     plt.plot(range(len(train_loss_history)), train_loss_history, label='train loss')
