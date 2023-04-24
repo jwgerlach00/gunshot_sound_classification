@@ -97,19 +97,19 @@ if __name__ == '__main__':
     precisions = []
     recalls = []
     f1s = []
-    ys = []
-    yps = []
+    ys = torch.tensor([])
+    yps = torch.tensor([])
     for X, y in test_dataloader:
-        print('=',sep='')
+        print('=',sep='',end='')
         y_p = model(X)
         loss = criterion(y_p, y)
         accuracies.append(calc_acc(y, y_p).item())
         precisions.append(precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
         recalls.append(recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
         f1s.append(f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
-        ys.extend(y.flatten().detach())
-        yps.extend(y_p.flatten().detach().round())
-
+        ys = torch.cat((ys,y.flatten().detach()),0)
+        yps = torch.cat((yps,y_p.flatten().detach().round()),0)
+    print()
     print("Accuracy",np.mean(accuracies))
     print("Precision",np.mean(precisions))
     print("Recall",np.mean(recalls))
