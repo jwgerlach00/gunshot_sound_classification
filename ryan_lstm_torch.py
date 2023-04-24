@@ -15,8 +15,7 @@ from pprint import pprint
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
         super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(X_shape[1], hidden_size=256, num_layers=1, dropout=0.2, bidirectional=True,
-                            batch_first=True)
+        self.lstm = nn.LSTM(X_shape[1], hidden_size=256, num_layers=1, bidirectional=True, batch_first=True)
         self.fc1 = nn.Linear(512, 128)
         self.fc2 = nn.Linear(128, 1)
         
@@ -25,18 +24,17 @@ class LSTMModel(nn.Module):
         
     def forward(self, x):
         _, (h, _) = self.lstm(x)
+        print(h.shape)
         h = h.view(h.shape[1], -1)
         x = self.relu(self.fc1(h))
         x = self.fc2(x)
         x = self.sigmoid(x)
-        return x.flatten()
+        return x[0]
 
 
 class LSTMDataset(Dataset):
     def __init__(self, X:np.ndarray, y:np.ndarray, window_size:int=10):
         self.window_size = window_size
-        # self.X = np.reshape(X.copy(), (-1, X.shape[-1]))
-        # self.y = np.reshape(y.copy(), (-1, 1))
         self.X = X.copy()
         self.y = y.copy()
     
@@ -80,6 +78,7 @@ if __name__ == '__main__':
 
     # Load X and y
     X = np.load('dataset/TrainDataNpz/spectrograms.npz')['a']
+    print(X.shape)
     y = np.load('dataset/TrainDataNpz/labels.npz')['a']
     # X = np.array(X['a']).reshape((10000,56,2049))
     # y = np.array(y['a']).reshape((10000,56))
@@ -103,7 +102,7 @@ if __name__ == '__main__':
     model = LSTMModel(X_train.shape)
 
     EPOCHS = 5
-    BATCH_SIZE = 32
+    BATCH_SIZE = 10
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -140,6 +139,7 @@ if __name__ == '__main__':
         for X, y in tqdm(batch_dataloader):
             
             y_p = model(X)
+            print(y_p.shape,y.shape)
             loss = criterion(y_p, y)
         
             optimizer.zero_grad()
