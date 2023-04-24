@@ -11,6 +11,16 @@ from sklearn.metrics import f1_score,precision_score,recall_score
 import seaborn as sns
 from pprint import pprint
 
+def plot_cm(y_true, y_pred):
+    cm = confusion_matrix(y_true, y_pred)
+    fig, ax = plt.subplots(figsize=(18, 16)) 
+    ax = sns.heatmap(
+        cm, 
+        annot=True, 
+        fmt="d", 
+        cmap=sns.diverging_palette(220, 20, n=7),
+        ax=ax
+    )
 
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
