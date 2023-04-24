@@ -80,9 +80,9 @@ if __name__ == '__main__':
     split_index = int(num_samples*train_ratio)
 
     # Split X and y
-    X_train = X[:1000]
+    X_train = X[:10000]
     X_val = X[split_index:]
-    y_train = y[:1000]
+    y_train = y[:10000]
     y_val = y[split_index:]
     # Assert that no samples are lost
     # assert X_train.shape[0] + X_val.shape[0] == X.shape[0]
@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     model = LSTMModel(X_train.shape)
 
-    EPOCHS = 5
+    EPOCHS = 25
     BATCH_SIZE = 10
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()
