@@ -31,8 +31,10 @@ class LSTMModel(nn.Module):
 class LSTMDataset(Dataset):
     def __init__(self, X:np.ndarray, y:np.ndarray, window_size:int=10):
         self.window_size = window_size
-        self.X = np.reshape(X.copy(), (-1, X.shape[-1]))
-        self.y = np.reshape(y.copy(), (-1, 1))
+        # self.X = np.reshape(X.copy(), (-1, X.shape[-1]))
+        # self.y = np.reshape(y.copy(), (-1, 1))
+        self.X = X.copy()
+        self.y = y.copy()
     
     def __len__(self):
         return self.X.shape[0] - self.window_size
