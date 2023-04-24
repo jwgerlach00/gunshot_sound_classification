@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 from pprint import pprint
 from torchmetrics import F1Score
+import yaml
 
 
 class LSTMModel(nn.Module):
@@ -65,12 +66,12 @@ if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
 
     # Load X and y
-    # X = np.load('dataset/spectrograms.npy')
-    # y = np.load('dataset/labels.npy')
-    X = np.load('dataset/spectrograms.npz')
-    y = np.load('dataset/labels.npz')
-    X = np.array(X['a']).reshape((10000,56,2049))
-    y = np.array(y['a']).reshape((10000,56))
+    X = np.load('dataset/spectrograms.npy')
+    y = np.load('dataset/labels.npy')
+    # X = np.load('dataset/spectrograms.npz')
+    # y = np.load('dataset/labels.npz')
+    # X = np.array(X['a']).reshape((10000,56,2049))
+    # y = np.array(y['a']).reshape((10000,56))
     # Assert that X and y have the same number of samples
     assert X.shape[0] == y.shape[0]
 
@@ -90,7 +91,7 @@ if __name__ == '__main__':
 
     model = LSTMModel(X_train.shape)
 
-    EPOCHS = 100
+    EPOCHS = 5
     BATCH_SIZE = 32
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()
@@ -172,3 +173,10 @@ if __name__ == '__main__':
         # epoch_history['val']['recall'].append(np.mean(batch_history['val']['recall']))
         
         pprint(epoch_history)
+    
+    torch.save(model.state_dict(), 'model_lstm_test.torch')
+    with open('yaml_test.yaml', 'w') as f:
+        yaml.dump(epoch_history, f)
+    plt.plot(range(len(epoch_history['train']['loss'])), epoch_history['train']['loss'], label='train')
+    plt.plot(range(len(epoch_history['val']['loss'])), epoch_history['val']['loss'], label='val')
+    plt.show()
