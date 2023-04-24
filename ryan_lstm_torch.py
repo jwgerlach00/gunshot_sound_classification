@@ -88,8 +88,8 @@ if __name__ == '__main__':
 
     model = LSTMModel(X_train.shape)
 
-    EPOCHS = 100
-    BATCH_SIZE = 32
+    EPOCHS = 5
+    BATCH_SIZE = 10
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -98,13 +98,16 @@ if __name__ == '__main__':
     val_dataloader = DataLoader(LSTMDataset(X_val, y_val), batch_size=BATCH_SIZE, shuffle=False)
     
     best_validation_loss = 1
+    train_loss_history = []
+    train_acc_history = []
+    val_loss_history = []
+    val_acc_history = []
     for epoch in range(EPOCHS):
         print()
         print(f'Epoch {epoch+1}/{EPOCHS}')
 
         model.train()
-        train_loss_history = []
-        train_acc_history = []
+        
         for X, y in tqdm(batch_dataloader):
             
             y_p = model(X)
@@ -124,8 +127,7 @@ if __name__ == '__main__':
         print(f'Train Accuracy: {np.mean(train_acc_history)}')
         
         model.eval()
-        val_loss_history = []
-        val_acc_history = []
+        
         for X, y in tqdm(val_dataloader):
             with torch.no_grad():
                 y_p = model(X)
