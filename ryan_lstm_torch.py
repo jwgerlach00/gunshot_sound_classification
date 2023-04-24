@@ -15,7 +15,7 @@ class LSTMModel(nn.Module):
         super(LSTMModel, self).__init__()
         self.lstm = nn.LSTM(X_shape[1], hidden_size=256, num_layers=1, dropout=0.2, bidirectional=True,
                             batch_first=True)
-        self.fc1 = nn.Linear(512, 128)
+        self.fc1 = nn.Linear(256, 128)
         self.fc2 = nn.Linear(128, 1)
         
         self.relu = nn.ReLU()
@@ -23,8 +23,8 @@ class LSTMModel(nn.Module):
         
     def forward(self, x):
         _, (h, _) = self.lstm(x)
-        h = h.view(h.shape[1], -1)
-        x = self.relu(self.fc1(h))
+        #h = h.view(h.shape[1], -1)
+        x = self.relu(self.fc1(h[0]))
         x = self.fc2(x)
         x = self.sigmoid(x)
         return x.flatten()
@@ -76,13 +76,13 @@ if __name__ == '__main__':
 
     # Define train/val split
     num_samples = X.shape[0]
-    train_ratio = .8
+    train_ratio = .99
     split_index = int(num_samples*train_ratio)
 
     # Split X and y
-    X_train = X[:split_index]
+    X_train = X[:1000]
     X_val = X[split_index:]
-    y_train = y[:split_index]
+    y_train = y[:1000]
     y_val = y[split_index:]
     # Assert that no samples are lost
     # assert X_train.shape[0] + X_val.shape[0] == X.shape[0]
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     model = LSTMModel(X_train.shape)
 
     EPOCHS = 5
-    BATCH_SIZE = 32
+    BATCH_SIZE = 10
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -122,6 +122,7 @@ if __name__ == '__main__':
         }
     
     epoch_history = history()
+    
     for epoch in range(EPOCHS):
         print(f'Epoch {epoch+1}/{EPOCHS}')
         batch_history = history()
@@ -172,3 +173,14 @@ if __name__ == '__main__':
         # epoch_history['val']['recall'].append(np.mean(batch_history['val']['recall']))
         
         pprint(epoch_history)
+        if np.mean(epoch_history['val']['loss']) < best_validation_loss:
+            best_validation_loss = np.mean(epoch_history['val']['loss'])
+            joblib.dump(model, f"bilstm_torch_train{epoch_history['train']['loss'][-1]}_val{epoch_history['val']['loss'][-1]}.joblib")
+    plt.figure()
+    plt.title('Loss curve')
+    plt.plot(range(len(epoch_history['train']['loss'])), epoch_history['train']['loss'], label='train loss')
+    plt.plot(range(len(epoch_history['val']['loss'])), epoch_history['val']['loss'], label='val loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
