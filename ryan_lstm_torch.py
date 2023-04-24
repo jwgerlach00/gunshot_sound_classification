@@ -13,6 +13,16 @@ import pandas as pd
 import os
 from tqdm import tqdm
 
+def plot_cm(y_true, y_pred):
+    cm = confusion_matrix(y_true, y_pred)
+    fig, ax = plt.subplots(figsize=(18, 16)) 
+    ax = sns.heatmap(
+        cm, 
+        annot=True, 
+        fmt="d", 
+        cmap=sns.diverging_palette(220, 20, n=7),
+        ax=ax
+    )
 
 class LSTMModel(nn.Module):
     def __init__(self, X_shape:Tuple[int, int, int]):
@@ -71,8 +81,8 @@ if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
 
     # Load X and y
-    X = np.load('dataset/spectrograms.npz')
-    y = np.load('dataset/labels.npz')
+    X = np.load('dataset/TrainDataNpz/spectrograms.npz')
+    y = np.load('dataset/TrainDataNpz/labels.npz')
     X = np.array(X['a']).reshape((10000,56,2049))
     y = np.array(y['a']).reshape((10000,56))
     # Assert that X and y have the same number of samples
