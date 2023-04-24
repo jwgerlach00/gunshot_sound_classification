@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     model = LSTMModel(X_train.shape)
 
-    EPOCHS = 100
+    EPOCHS = 5
     BATCH_SIZE = 32
     # criterion = nn.CrossEntropyLoss(weight=distribution(y_train))
     criterion = nn.BCELoss()

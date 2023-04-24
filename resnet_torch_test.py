@@ -12,13 +12,11 @@ import seaborn as sns
 import pandas as pd
 import os
 
-def plot_cm(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred)
+def plot_cm(cm):
     fig, ax = plt.subplots(figsize=(18, 16)) 
     ax = sns.heatmap(
         cm, 
         annot=True, 
-        fmt="d", 
         cmap=sns.diverging_palette(220, 20, n=7),
         ax=ax
     )
@@ -97,8 +95,10 @@ if __name__ == '__main__':
     precisions = []
     recalls = []
     f1s = []
-    ys = torch.tensor([])
-    yps = torch.tensor([])
+    cms0 = []
+    cms1 = []
+    cms2 = []
+    cms3 = []
     for X, y in test_dataloader:
         print('=',sep='',end='')
         y_p = model(X)
@@ -107,14 +107,17 @@ if __name__ == '__main__':
         precisions.append(precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
         recalls.append(recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
         f1s.append(f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
-        ys = torch.cat((ys,y.flatten().detach()),0)
-        yps = torch.cat((yps,y_p.flatten().detach().round()),0)
+        cms0.append(np.array(confusion_matrix(y.flatten().detach(), y_p.flatten().detach().round()))[0][0])
+        cms1.append(np.array(confusion_matrix(y.flatten().detach(), y_p.flatten().detach().round()))[0][1])
+        cms2.append(np.array(confusion_matrix(y.flatten().detach(), y_p.flatten().detach().round()))[1][0])
+        cms3.append(np.array(confusion_matrix(y.flatten().detach(), y_p.flatten().detach().round()))[1][1])
+        plot_cm(confusion_matrix(y.flatten().detach(), y_p.flatten().detach().round()))
     print()
     print("Accuracy",np.mean(accuracies))
     print("Precision",np.mean(precisions))
     print("Recall",np.mean(recalls))
     print("F1",np.mean(f1s))
-    plot_cm(ys, yps)
+    plot_cm(np.array([sum(cms0),sum(cms1),sum(cms2),sum(cms3)]))
 
 
     
