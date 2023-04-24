@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
         model.train()
         train_loss_history = []
-        for X, y in batch_dataloader:
+        for X, y in tqdm(batch_dataloader):
             
             y_p = model(X)
             loss = criterion(y_p, y)
@@ -127,7 +127,7 @@ if __name__ == '__main__':
             optimizer.step()
             
         train_loss_history.append(loss.item())
-        print("\n",zeros_and_ones(y_p[0]),"%")
+        # print("\n",zeros_and_ones(y_p),"%")
         print("Accuracy",calc_acc(y, y_p).item())
         print("Loss",loss.item())
         print("Training Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
@@ -139,7 +139,7 @@ if __name__ == '__main__':
         
         model.eval()
         val_loss_history = []
-        for X, y in val_dataloader:
+        for X, y in tqdm(val_dataloader):
             with torch.no_grad():
                 y_p = model(X)
                 loss = criterion(y_p, y)
