@@ -1,10 +1,16 @@
 import torch
 from torch import nn
+import torchvision
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from typing import Tuple
 import joblib
 from matplotlib import pyplot as plt
+from sklearn.metrics import f1_score,precision_score,recall_score
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import pandas as pd
+import os
 from tqdm import tqdm
 
 
@@ -102,51 +108,63 @@ if __name__ == '__main__':
     train_acc_history = []
     val_loss_history = []
     val_acc_history = []
+    
     for epoch in range(EPOCHS):
         print()
         print(f'Epoch {epoch+1}/{EPOCHS}')
 
         model.train()
         
-        for X, y in tqdm(batch_dataloader):
+        for X, y in batch_dataloader:
             
             y_p = model(X)
             loss = criterion(y_p, y)
-            # print("\n",zeros_and_ones(y_p[0]),"%")
-            # print("Accuracy",calc_acc(y, y_p).item())
-            # print("Loss",loss.item())
-            
+        
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            train_loss_history.append(loss.item())
-            train_acc_history.append(calc_acc(y, y_p).item())
-            
+        train_loss_history.append(loss.item())
+        train_acc_history.append(calc_acc(y, y_p).item())
+        print("\n",zeros_and_ones(y_p[0]),"%")
+        print("Accuracy",calc_acc(y, y_p).item())
+        print("Loss",loss.item())
+        print("Training Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Training Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Training f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
+                 
         print(f'Train Loss: {np.mean(train_loss_history)}')
-        print(f'Train Accuracy: {np.mean(train_acc_history)}')
+        print(class_counts((y_p > 0.5).int()))
         
         model.eval()
         
-        for X, y in tqdm(val_dataloader):
+        for X, y in val_dataloader:
             with torch.no_grad():
                 y_p = model(X)
                 loss = criterion(y_p, y)
-                val_loss_history.append(loss.item())
-                val_acc_history.append(calc_acc(y, y_p).item())
-               
-        print(f'Val Loss: {np.mean(val_loss_history)}')
-        print(f'Val Accuracy: {np.mean(val_acc_history)}')
-        # if np.mean(val_loss_history) < best_validation_loss:
-        #     best_validation_loss = np.mean(val_loss_history)
-        #     joblib.dump(model, f'lstm_torch_train{train_loss_history[-1]}_val{val_loss_history[-1]}.joblib')
-        #training_loop = joblib.load('mlpd.joblib') 
+        val_loss_history.append(loss.item())
+        val_acc_history.append(calc_acc(y, y_p).item())
+        print("\nAccuracy",calc_acc(y, y_p).item())
+        print("Loss",loss.item())
+        print("Validation Precision",precision_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Validation Recall",recall_score(y.flatten().detach(),y_p.flatten().detach().round()))
+        print("Validation f1",f1_score(y.flatten().detach(),y_p.flatten().detach().round()))
 
-    # plt.figure()
-    # plt.title('Loss curve')
-    # plt.plot(range(len(train_loss_history)), train_loss_history, label='train loss')
-    # plt.plot(range(len(val_loss_history)), val_loss_history, label='val loss')
-    # plt.xlabel('Epochs')
-    # plt.ylabel('Loss')
-    # plt.legend()
-    # plt.show()
+        
+
+        print(f'Val Loss: {np.mean(val_loss_history)}')
+        if np.mean(val_loss_history) < best_validation_loss:
+            best_validation_loss = np.mean(val_loss_history)
+            joblib.dump(model, f'lstm_torch_train{train_loss_history[-1]}_val{val_loss_history[-1]}.joblib')
+        #training_loop = joblib.load('mlpd.joblib') 
+    plot_cm(y.flatten().detach(), y_p.flatten().detach().round())
+    plt.figure()
+    plt.title('Loss curve')
+    plt.plot(range(len(train_loss_history)), train_loss_history, label='train loss')
+    plt.plot(range(len(val_loss_history)), val_loss_history, label='val loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
+
+    
