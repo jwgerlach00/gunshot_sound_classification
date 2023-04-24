@@ -65,8 +65,10 @@ if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
 
     # Load X and y
-    X = np.load('dataset/spectrograms.npy')
-    y = np.load('dataset/labels.npy')
+    X = np.load('dataset/spectrograms.npz')
+    y = np.load('dataset/labels.npz')
+    X = np.array(X['a']).reshape((10000,56,2049))
+    y = np.array(y['a']).reshape((10000,56))
     # Assert that X and y have the same number of samples
     assert X.shape[0] == y.shape[0]
 
