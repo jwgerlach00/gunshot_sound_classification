@@ -72,22 +72,12 @@ def distribution(y):
 if __name__ == '__main__':
     print('CUDA' if torch.cuda.is_available() else 'CPU')
 
-    if True:
-        X = np.load('dataset/TestDataNpz/spectrograms.npz')
-        y = np.load('dataset/TestDataNpz/labels.npz')
+    X = np.load('dataset/TestDataNpz/spectrograms.npz')
+    y = np.load('dataset/TestDataNpz/labels.npz')
 
-        X = np.array(X['a']).reshape((1000,56,2049))
-        y = np.array(y['a']).reshape((1000,56))
+    X = np.array(X['a']).reshape((1000,56,2049))
+    y = np.array(y['a']).reshape((1000,56))
         
-        
-    else:
-        #load jacobs 1000 dataset
-        # Load X and y
-        X = np.load('dataset/spectrograms.npy')
-        y = np.load('dataset/labels.npy')
-    # Assert that X and y have the same number of samples
-    assert X.shape[0] == y.shape[0]
-
     # Define train/val split
     num_samples = X.shape[0]
 
@@ -110,7 +100,7 @@ if __name__ == '__main__':
     ys = []
     yps = []
     for X, y in test_dataloader:
-        
+        print('=',sep='')
         y_p = model(X)
         loss = criterion(y_p, y)
         accuracies.append(calc_acc(y, y_p).item())
@@ -120,6 +110,10 @@ if __name__ == '__main__':
         ys.extend(y.flatten().detach())
         yps.extend(y_p.flatten().detach().round())
 
+    print("Accuracy",np.mean(accuracies))
+    print("Precision",np.mean(precisions))
+    print("Recall",np.mean(recalls))
+    print("F1",np.mean(f1s))
     plot_cm(ys, yps)
 
 
